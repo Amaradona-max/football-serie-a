@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serie A 2025/2026 - Previsioni Live</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .match-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .match-card:hover {
+            transform: translateY(-2px);
+        }
+        .bio-rhythm-bar {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold">Serie A 2025/2026</h1>
+                    <p class="text-blue-200">Previsioni Live e Analisi in Tempo Reale</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-blue-200">Ultimo aggiornamento: <span id="last-updated">--:--</span></div>
+                    <div class="text-xs text-blue-300">Dati aggiornati ogni 5 minuti</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Buttons -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-3">
+            <div class="grid grid-cols-2 md:grid-cols-7 gap-2">
+                <button onclick="showSection('live-matches')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    📊 Live
+                </button>
+                <button onclick="showSection('standings')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    🏆 Classifica
+                </button>
+                <button onclick="showSection('scorers')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    ⚽ Marcatori
+                </button>
+                <button onclick="showSection('predictions')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    🔮 Previsioni gare
+                </button>
+                <button onclick="showSection('cards')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    🟨 Cartellini
+                </button>
+                <button onclick="showSection('finished')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    ✅ Concluse
+                </button>
+                <button onclick="showSection('analysis')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    📈 Analisi
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Live Matches Section -->
+        <section id="live-matches" class="section">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">🎯 Partite in Corso - Live</h2>
+            <div id="live-matches-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Match cards will be loaded here -->
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento partite in corso...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Standings Section -->
+        <section id="standings" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">🏆 Classifica Serie A</h2>
+            <div id="standings-container">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento classifica...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Scorers Section -->
+        <section id="scorers" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">⚽ Top Marcatori</h2>
+            <div id="scorers-container">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento marcatori...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cards Section -->
+        <section id="cards" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">🟨 Statistiche Cartellini</h2>
+            <div id="cards-container">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento statistiche cartellini...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Predictions Section -->
+        <section id="predictions" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">🔮 Previsioni Prossima Giornata</h2>
+            <div id="predictions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento previsioni gare...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Finished Matches Section -->
+        <section id="finished" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">✅ Partite Concluse</h2>
+            <div id="finished-matches-container">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento partite concluse...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analysis Section -->
+        <section id="analysis" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">📈 Analisi Giornaliera</h2>
+            <div id="analysis-container">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento analisi...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 Serie A Previsioni Live - Sistema di analisi in tempo reale</p>
+            <p class="text-sm text-gray-400 mt-2">Dati aggiornati da multiple fonti ufficiali</p>
+        </div>
+    </footer>
+
+    <script>
+        // API configuration
+        const API_BASE_URL = `${window.location.origin}/api/v1`;
+        const API_KEY = 'test-api-key-12345';
+
+        // Current state
+        let currentSection = 'live-matches';
+        let autoRefreshInterval;
+
+        // Show specific section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            currentSection = sectionId;
+            
+            // Load data for the section
+            loadSectionData(sectionId);
+        }
+
+        // Load data for specific section
+        async function loadSectionData(sectionId) {
+            try {
+                switch(sectionId) {
+                    case 'live-matches':
+                        await loadLiveMatches();
+                        break;
+                    case 'standings':
+                        await loadStandings();
+                        break;
+                    case 'scorers':
+                        await loadTopScorers();
+                        break;
+                    case 'cards':
+                        await loadCardsStats();
+                        break;
+                    case 'predictions':
+                        await loadPredictions();
+                        break;
+                    case 'finished':
+                        await loadFinishedMatches();
+                        break;
+                    case 'analysis':
+                        await loadDailyAnalysis();
+                        break;
+                }
+            } catch (error) {
+                console.error('Error loading section data:', error);
+                showError(sectionId, 'Errore nel caricamento dei dati');
+            }
+        }
+
+        // Load live matches with detailed cards
+        async function loadLiveMatches() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/live/cards`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('live-matches-container');
+            
+            // Check if data is an array, if not show error
+            if (!Array.isArray(data)) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento dati</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console</p>
+                    </div>
+                `;
+                console.error('API returned non-array data:', data);
+                return;
+            }
+            
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in corso</h3>
+                        <p class="text-gray-600">Torna più tardi per le partite live</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = data.map(match => `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <!-- Match Header -->
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                ${match.minute ? `${match.minute}'` : match.status}
+                            </span>
+                            <span class="text-sm">${match.score || 'VS'}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                    </div>
+                    
+                    <!-- Prediction -->
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold text-gray-700 mb-2">📊 Pronostico</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-red-100 p-2 rounded">
+                                <div class="text-sm text-red-600">1</div>
+                                <div class="font-bold text-red-700">${match.prediction.home_win_prob}%</div>
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded">
+                                <div class="text-sm text-gray-600">X</div>
+                                <div class="font-bold text-gray-700">${match.prediction.draw_prob}%</div>
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded">
+                                <div class="text-sm text-blue-600">2</div>
+                                <div class="font-bold text-blue-700">${match.prediction.away_win_prob}%</div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-2 text-sm text-gray-600">
+                            Probabile: ${match.prediction.most_likely_scoreline}
+                        </div>
+                    </div>
+                    
+                    <!-- Expected Goals -->
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold text-gray-700 mb-2">🎯 Goal Attesi</h4>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">${match.home_team}:</span>
+                            <span class="font-bold">${match.prediction.expected_goals.home}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">${match.away_team}:</span>
+                            <span class="font-bold">${match.prediction.expected_goals.away}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">Totale:</span>
+                            <span class="font-bold">${match.prediction.expected_goals.total}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Bio Rhythm -->
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">⭐ Bioritmo Calciatori</h4>
+                        ${Object.entries(match.bio_rhythm_analysis).slice(0, 3).map(([player, rhythm]) => `
+                            <div class="mb-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="font-medium">${player}</span>
+                                    <span class="font-bold ${getRhythmColor(rhythm.overall)}">${rhythm.overall}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: ${rhythm.overall}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load next matchday predictions
+        async function loadPredictions() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/next/predictions`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('predictions-container');
+
+            if (!Array.isArray(data)) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento previsioni</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console</p>
+                    </div>
+                `;
+                console.error('API returned non-array predictions:', data);
+                return;
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in programma</h3>
+                        <p class="text-gray-600">Torna più tardi per le previsioni della prossima giornata</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => {
+                const kickoff = new Date(match.kickoff);
+                const kickoffText = kickoff.toLocaleString('it-IT', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const now = new Date();
+                const diffMinutes = (kickoff - now) / 60000;
+                const showPreMatchDetails = diffMinutes <= 60;
+
+                const p = match.prediction;
+                const bio = match.bio_rhythm_analysis || {};
+                const lineups = match.expected_lineups || null;
+
+                return `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                Giornata ${match.matchday}
+                            </span>
+                            <span class="text-sm">${kickoffText}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                    </div>
+
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold text-gray-700 mb-2">📊 Pronostico</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-red-100 p-2 rounded">
+                                <div class="text-sm text-red-600">1</div>
+                                <div class="font-bold text-red-700">${p.home_win_prob}%</div>
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded">
+                                <div class="text-sm text-gray-600">X</div>
+                                <div class="font-bold text-gray-700">${p.draw_prob}%</div>
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded">
+                                <div class="text-sm text-blue-600">2</div>
+                                <div class="font-bold text-blue-700">${p.away_win_prob}%</div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-2 text-sm text-gray-600">
+                            Probabile: ${p.most_likely_scoreline}
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">🎯 Goal Attesi</h4>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">${match.home_team}:</span>
+                            <span class="font-bold">${p.expected_goals.home}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">${match.away_team}:</span>
+                            <span class="font-bold">${p.expected_goals.away}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">Totale:</span>
+                            <span class="font-bold">${p.expected_goals.total}</span>
+                        </div>
+                    </div>
+
+                    ${showPreMatchDetails && Object.keys(bio).length > 0 ? `
+                    <div class="p-4 border-t">
+                        <h4 class="font-semibold text-gray-700 mb-2">⭐ Bioritmo Calciatori</h4>
+                        ${Object.entries(bio).slice(0, 3).map(([player, rhythm]) => `
+                            <div class="mb-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="font-medium">${player}</span>
+                                    <span class="font-bold ${getRhythmColor(rhythm.overall)}">${rhythm.overall}%</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : `
+                    <div class="p-4 border-t text-sm text-gray-500">
+                        Dati bioritmo disponibili da circa un'ora prima del calcio d'inizio.
+                    </div>
+                    `}
+
+                    ${showPreMatchDetails && lineups ? `
+                    <div class="p-4 border-t">
+                        <h4 class="font-semibold text-gray-700 mb-2">📋 Probabili Formazioni</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <div class="font-semibold mb-1">${match.home_team}</div>
+                                <div>Modulo: ${lineups.home.formation}</div>
+                                <div>Allenatore: ${lineups.home.coach}</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold mb-1">${match.away_team}</div>
+                                <div>Modulo: ${lineups.away.formation}</div>
+                                <div>Allenatore: ${lineups.away.coach}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Helper function for rhythm color
+        function getRhythmColor(score) {
+            if (score >= 80) return 'text-green-600';
+            if (score >= 60) return 'text-blue-600';
+            if (score >= 40) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        // Load standings
+        async function loadStandings() {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('standings-container');
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Pos</th>
+                                <th class="px-4 py-2 text-left">Squadra</th>
+                                <th class="px-4 py-2 text-center">P</th>
+                                <th class="px-4 py-2 text-center">V</th>
+                                <th class="px-4 py-2 text-center">GF</th>
+                                <th class="px-4 py-2 text-center">GS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.standings.standings.map((team, index) => `
+                                <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100">
+                                    <td class="px-4 py-2 font-bold">${team.position}</td>
+                                    <td class="px-4 py-2 font-medium">${team.team.name}</td>
+                                    <td class="px-4 py-2 text-center">${team.points}</td>
+                                    <td class="px-4 py-2 text-center">${team.won}</td>
+                                    <td class="px-4 py-2 text-center">${team.goals_for}</td>
+                                    <td class="px-4 py-2 text-center">${team.goals_against}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Load top scorers
+        async function loadTopScorers() {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('scorers-container');
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Giocatore</th>
+                                <th class="px-4 py-2 text-left">Nazionalità</th>
+                                <th class="px-4 py-2 text-center">Goal</th>
+                                <th class="px-4 py-2 text-center">Assist</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.top_scorers.map((scorer, index) => `
+                                <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100">
+                                    <td class="px-4 py-2 font-medium">${scorer.player.name}</td>
+                                    <td class="px-4 py-2 text-gray-600">${scorer.player.nationality}</td>
+                                    <td class="px-4 py-2 text-center font-bold">${scorer.goals}</td>
+                                    <td class="px-4 py-2 text-center">${scorer.assists || 0}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Load cards stats
+        async function loadCardsStats() {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('cards-container');
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-4">🟨 Cartellini Gialli</h3>
+                        ${data.card_stats.sort((a, b) => b.yellow_cards - a.yellow_cards).slice(0, 5).map(team => `
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span class="font-medium">${team.team_name}</span>
+                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">${team.yellow_cards}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-4">🟥 Cartellini Rossi</h3>
+                        ${data.card_stats.sort((a, b) => b.red_cards - a.red_cards).slice(0, 5).map(team => `
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span class="font-medium">${team.team_name}</span>
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${team.red_cards}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load finished matches
+        async function loadFinishedMatches() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/finished`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const matches = await response.json();
+            
+            const container = document.getElementById('finished-matches-container');
+            container.innerHTML = matches.map(match => `
+                <div class="bg-white rounded-lg shadow p-4 mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-lg">${match.home_team} ${match.score} ${match.away_team}</h3>
+                        <span class="text-sm text-gray-500">Giornata ${match.matchday}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">⚽ Goal</h4>
+                            ${match.goals.map(goal => `
+                                <div class="text-sm text-gray-600">
+                                    ${goal.player} (${goal.minute}') - ${goal.team}
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">🟨 Cartellini</h4>
+                            ${match.cards.map(card => `
+                                <div class="text-sm text-gray-600">
+                                    ${card.player} (${card.minute}') - ${card.card === 'yellow' ? '🟨' : '🟥'}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load daily analysis
+        async function loadDailyAnalysis() {
+            const response = await fetch(`${API_BASE_URL}/detailed/analysis/daily`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const analysis = await response.json();
+            
+            const container = document.getElementById('analysis-container');
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">📊 Statistiche Giornata</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Partite:</span>
+                                <span class="font-bold">${analysis.total_matches}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal totali:</span>
+                                <span class="font-bold">${analysis.total_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal casa:</span>
+                                <span class="font-bold">${analysis.home_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal trasferta:</span>
+                                <span class="font-bold">${analysis.away_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Media goal:</span>
+                                <span class="font-bold">${analysis.average_goals_per_match}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Cartellini:</span>
+                                <span class="font-bold">${analysis.total_cards}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Media cartellini:</span>
+                                <span class="font-bold">${analysis.average_cards_per_match}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">🏆 Risultati</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Vittorie casa:</span>
+                                <span class="font-bold">${analysis.home_wins}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Vittorie trasferta:</span>
+                                <span class="font-bold">${analysis.away_wins}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Pareggi:</span>
+                                <span class="font-bold">${analysis.draws}</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>% Casa / Trasferta / Pareggi:</span>
+                                <span class="font-bold">
+                                    ${analysis.home_win_percentage}% /
+                                    ${analysis.away_win_percentage}% /
+                                    ${analysis.draw_percentage}%
+                                </span>
+                            </div>
+                            <div class="border-t border-gray-200 my-2"></div>
+                            <div class="flex justify-between">
+                                <span>Over 2.5 goal:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_over_25_goals} (${analysis.total_matches > 0 ? ((analysis.matches_over_25_goals / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal entrambe le squadre:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_both_teams_score} (${analysis.total_matches > 0 ? ((analysis.matches_both_teams_score / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Clean sheet:</span>
+                                <span class="font-bold">
+                                    ${analysis.clean_sheets} (${analysis.total_matches > 0 ? ((analysis.clean_sheets / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Partite con rosso:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_with_red_card} (${analysis.total_matches > 0 ? ((analysis.matches_with_red_card / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">⭐ Highlights</h3>
+                        <div class="space-y-2">
+                            <div>
+                                <span class="text-sm text-gray-600">Partita più produttiva:</span>
+                                <div class="font-medium">${analysis.most_productive_match}</div>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Partita più disciplinata:</span>
+                                <div class="font-medium">${analysis.most_disciplined_match}</div>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Vittoria più larga:</span>
+                                <div class="font-medium">${analysis.biggest_win}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show error message
+        function showError(sectionId, message) {
+            const container = document.getElementById(`${sectionId}-container`);
+            container.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <div class="text-red-600 text-4xl mb-2">⚠️</div>
+                    <h3 class="text-red-800 font-semibold">Errore</h3>
+                    <p class="text-red-600">${message}</p>
+                    <button onclick="loadSectionData('${sectionId}')" class="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                        Riprova
+                    </button>
+                </div>
+            `;
+        }
+
+        // Auto-refresh data every 5 minuti
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                loadSectionData(currentSection);
+                updateLastUpdated();
+            }, 300000); // 5 minuti
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = 
+                now.toLocaleTimeString('it-IT');
+        }
+
+        // Initialize the application
+        async function initApp() {
+            // Show loading state
+            showSection('live-matches');
+            
+            // Start auto-refresh
+            startAutoRefresh();
+            
+            // Initial data load
+            await loadSectionData('live-matches');
+            updateLastUpdated();
+            
+            // Set up periodic updates
+            setInterval(updateLastUpdated, 60000); // Update time every minute
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
