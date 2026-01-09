@@ -8,13 +8,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
-    API_KEY: str
+    API_KEY: str = "test-api-key-12345"
     
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     
     # Database settings
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite:///./football.db"
     
     # Redis settings
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -26,9 +26,9 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
     
     # Football data providers
-    FOOTBALL_DATA_API_KEY: str
-    API_FOOTBALL_KEY: str
-    RAPIDAPI_KEY: str
+    FOOTBALL_DATA_API_KEY: str = ""
+    API_FOOTBALL_KEY: str = ""
+    RAPIDAPI_KEY: str = ""
     GOALMODEL_API_URL: Optional[str] = None
     
     # League and season settings
