@@ -3,14 +3,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 import os
+from pathlib import Path
 
 app = FastAPI(title="Serie A Frontend", version="1.0.0")
 
-# Configure templates
-templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+base_dir = Path(os.path.dirname(__file__))
 
-# Mount static files (if any)
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+templates = Jinja2Templates(directory=str(base_dir / "templates"))
+
+static_dir = base_dir / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_homepage(request: Request):
