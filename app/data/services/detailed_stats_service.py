@@ -587,11 +587,20 @@ class DetailedStatsService:
                 over25 = float(result.get("over_25_prob", 0.0))
                 scoreline = result.get("most_likely_scoreline")
 
+                home_prob_pct = round(home_prob, 1)
+                draw_prob_pct = round(draw_prob, 1)
+                away_prob_pct = round(away_prob, 1)
+
+                def fair_odds(pct: float) -> Optional[float]:
+                    if pct <= 0:
+                        return None
+                    return round(100.0 / pct, 2)
+
                 return MatchPredictionDetailed(
                     match_id=match.id,
-                    home_win_prob=round(home_prob, 1),
-                    draw_prob=round(draw_prob, 1),
-                    away_win_prob=round(away_prob, 1),
+                    home_win_prob=home_prob_pct,
+                    draw_prob=draw_prob_pct,
+                    away_win_prob=away_prob_pct,
                     expected_goals=ExpectedGoals(
                         home=round(home_xg, 2),
                         away=round(away_xg, 2),
@@ -600,6 +609,9 @@ class DetailedStatsService:
                     both_teams_to_score_prob=round(btts, 1),
                     over_under_25_prob=round(over25, 1),
                     most_likely_scoreline=scoreline or "1-1",
+                    home_fair_odds=fair_odds(home_prob_pct),
+                    draw_fair_odds=fair_odds(draw_prob_pct),
+                    away_fair_odds=fair_odds(away_prob_pct),
                 )
             except Exception as e:
                 logger.error(f"Error calling goalmodel provider: {e}")
@@ -620,15 +632,27 @@ class DetailedStatsService:
                     away_stats = ts
 
         if not home_stats or not away_stats:
+            home_prob = 45.0
+            draw_prob = 30.0
+            away_prob = 25.0
+
+            def fair_odds(pct: float) -> Optional[float]:
+                if pct <= 0:
+                    return None
+                return round(100.0 / pct, 2)
+
             return MatchPredictionDetailed(
                 match_id=match.id,
-                home_win_prob=45.0,
-                draw_prob=30.0,
-                away_win_prob=25.0,
+                home_win_prob=home_prob,
+                draw_prob=draw_prob,
+                away_win_prob=away_prob,
                 expected_goals=ExpectedGoals(home=1.8, away=1.2, total=3.0),
                 both_teams_to_score_prob=65.0,
                 over_under_25_prob=70.0,
                 most_likely_scoreline="2-1",
+                home_fair_odds=fair_odds(home_prob),
+                draw_fair_odds=fair_odds(draw_prob),
+                away_fair_odds=fair_odds(away_prob),
             )
 
         def compute_rating(ts) -> float:
@@ -688,6 +712,11 @@ class DetailedStatsService:
 
         most_likely_scoreline = f"{home_goals_rounded}-{away_goals_rounded}"
 
+        def fair_odds(pct: float) -> Optional[float]:
+            if pct <= 0:
+                return None
+            return round(100.0 / pct, 2)
+
         return MatchPredictionDetailed(
             match_id=match.id,
             home_win_prob=home_prob,
@@ -701,6 +730,9 @@ class DetailedStatsService:
             both_teams_to_score_prob=both_teams_to_score_prob,
             over_under_25_prob=over_under_25_prob,
             most_likely_scoreline=most_likely_scoreline,
+            home_fair_odds=fair_odds(home_prob),
+            draw_fair_odds=fair_odds(draw_prob),
+            away_fair_odds=fair_odds(away_prob),
         )
     
     async def _get_expected_lineups(self, match: Any) -> Dict[str, Any]:

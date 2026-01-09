@@ -79,6 +79,9 @@ class MatchPredictionDetailed(BaseModel):
     both_teams_to_score_prob: float
     over_under_25_prob: float
     most_likely_scoreline: str
+    home_fair_odds: Optional[float] = None
+    draw_fair_odds: Optional[float] = None
+    away_fair_odds: Optional[float] = None
     
 class DailyAnalysis(BaseModel):
     date: date

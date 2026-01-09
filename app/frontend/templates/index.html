@@ -267,14 +267,17 @@
                             <div class="bg-red-100 p-2 rounded">
                                 <div class="text-sm text-red-600">1</div>
                                 <div class="font-bold text-red-700">${match.prediction.home_win_prob}%</div>
+                                ${match.prediction.home_fair_odds ? `<div class="text-xs text-red-700 mt-1">q. fair ${match.prediction.home_fair_odds}</div>` : ''}
                             </div>
                             <div class="bg-gray-100 p-2 rounded">
                                 <div class="text-sm text-gray-600">X</div>
                                 <div class="font-bold text-gray-700">${match.prediction.draw_prob}%</div>
+                                ${match.prediction.draw_fair_odds ? `<div class="text-xs text-gray-700 mt-1">q. fair ${match.prediction.draw_fair_odds}</div>` : ''}
                             </div>
                             <div class="bg-blue-100 p-2 rounded">
                                 <div class="text-sm text-blue-600">2</div>
                                 <div class="font-bold text-blue-700">${match.prediction.away_win_prob}%</div>
+                                ${match.prediction.away_fair_odds ? `<div class="text-xs text-blue-700 mt-1">q. fair ${match.prediction.away_fair_odds}</div>` : ''}
                             </div>
                         </div>
                         <div class="text-center mt-2 text-sm text-gray-600">
@@ -388,14 +391,17 @@
                             <div class="bg-red-100 p-2 rounded">
                                 <div class="text-sm text-red-600">1</div>
                                 <div class="font-bold text-red-700">${p.home_win_prob}%</div>
+                                ${p.home_fair_odds ? `<div class="text-xs text-red-700 mt-1">q. fair ${p.home_fair_odds}</div>` : ''}
                             </div>
                             <div class="bg-gray-100 p-2 rounded">
                                 <div class="text-sm text-gray-600">X</div>
                                 <div class="font-bold text-gray-700">${p.draw_prob}%</div>
+                                ${p.draw_fair_odds ? `<div class="text-xs text-gray-700 mt-1">q. fair ${p.draw_fair_odds}</div>` : ''}
                             </div>
                             <div class="bg-blue-100 p-2 rounded">
                                 <div class="text-sm text-blue-600">2</div>
                                 <div class="font-bold text-blue-700">${p.away_win_prob}%</div>
+                                ${p.away_fair_odds ? `<div class="text-xs text-blue-700 mt-1">q. fair ${p.away_fair_odds}</div>` : ''}
                             </div>
                         </div>
                         <div class="text-center mt-2 text-sm text-gray-600">
