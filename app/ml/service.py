@@ -3,7 +3,7 @@ from datetime import datetime
 import logging
 
 from app.data.services.unified_data_service import unified_data_service
-from app.data.models.common import Match, Team, Standings, PredictionInput, PredictionOutput
+from app.data.models.common import Team, Standings, PredictionInput, PredictionOutput
 from app.ml.models import prediction_model
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ class PredictionService:
             logger.error(f"Error predicting match {match_id}: {e}")
             raise
     
-    async def _prepare_prediction_input(self, match: Match, standings: Standings) -> PredictionInput:
+    async def _prepare_prediction_input(self, match, standings: Standings) -> PredictionInput:
         """
         Prepare prediction input from match and standings data.
         
