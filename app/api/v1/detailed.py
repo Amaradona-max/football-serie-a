@@ -16,13 +16,6 @@ router = APIRouter()
 
 @router.get("/stats/seriea", response_model=SerieAStats)
 async def get_seriea_detailed_stats(api_key: str = Depends(verify_api_key)):
-    """
-    Get complete Serie A statistics including:
-    - Classifica completa
-    - Top marcatori
-    - Statistiche cartellini
-    - Giocatori squalificati
-    """
     try:
         monitor_api_call("api", "seriea_detailed_stats", "request")
         stats = await detailed_stats_service.get_seriea_stats()
@@ -30,6 +23,17 @@ async def get_seriea_detailed_stats(api_key: str = Depends(verify_api_key)):
         return stats
     except Exception as e:
         monitor_api_call("api", "seriea_detailed_stats", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/stats/norway", response_model=SerieAStats)
+async def get_norway_detailed_stats(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "norway_detailed_stats", "request")
+        stats = await detailed_stats_service.get_norway_stats()
+        monitor_api_call("api", "norway_detailed_stats", "success")
+        return stats
+    except Exception as e:
+        monitor_api_call("api", "norway_detailed_stats", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/matches/next/predictions")

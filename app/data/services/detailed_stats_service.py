@@ -22,7 +22,6 @@ class DetailedStatsService:
         self.cache_prefix = "seriea_detailed:"
     
     async def get_seriea_stats(self) -> SerieAStats:
-        """Get complete Serie A statistics including standings, scorers, cards, suspensions"""
         cache_key = f"{self.cache_prefix}complete_stats"
         
         # Try cache first
@@ -53,6 +52,34 @@ class DetailedStatsService:
             
         except Exception as e:
             logger.error(f"Error getting Serie A stats: {e}")
+            raise
+
+    async def get_norway_stats(self) -> SerieAStats:
+        cache_key = "norway_detailed:complete_stats"
+        
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            return SerieAStats.parse_raw(cached_data)
+        
+        try:
+            standings = await unified_data_service.get_standings_norway()
+            top_scorers = await self._get_norway_top_scorers()
+            card_stats = await self._get_norway_card_stats()
+            suspensions = await self._get_norway_suspensions()
+            
+            stats = SerieAStats(
+                standings=standings,
+                top_scorers=top_scorers,
+                card_stats=card_stats,
+                suspensions=suspensions,
+                last_updated=datetime.now()
+            )
+            
+            await redis_client.setex(cache_key, 60, stats.json())
+            
+            return stats
+        except Exception as e:
+            logger.error(f"Error getting Norway stats: {e}")
             raise
 
     async def get_prediction_context(self, match: Any) -> Dict[str, Any]:
@@ -305,6 +332,70 @@ class DetailedStatsService:
             ),
         ]
     
+    async def _get_norway_top_scorers(self) -> List[TopScorer]:
+        return [
+            TopScorer(
+                player=PlayerDetailed(
+                    id=2001,
+                    name="Amahl Pellegrino",
+                    position="Forward",
+                    date_of_birth=date(1990, 6, 18),
+                    nationality="Norway",
+                ),
+                goals=14,
+                assists=4,
+                minutes_played=1500,
+            ),
+            TopScorer(
+                player=PlayerDetailed(
+                    id=2002,
+                    name="Ola Brynhildsen",
+                    position="Forward",
+                    date_of_birth=date(1999, 4, 27),
+                    nationality="Norway",
+                ),
+                goals=11,
+                assists=3,
+                minutes_played=1450,
+            ),
+            TopScorer(
+                player=PlayerDetailed(
+                    id=2003,
+                    name="Kasper Junker",
+                    position="Forward",
+                    date_of_birth=date(1994, 3, 5),
+                    nationality="Denmark",
+                ),
+                goals=9,
+                assists=2,
+                minutes_played=1380,
+            ),
+            TopScorer(
+                player=PlayerDetailed(
+                    id=2004,
+                    name="Ulrik Saltnes",
+                    position="Midfielder",
+                    date_of_birth=date(1992, 11, 10),
+                    nationality="Norway",
+                ),
+                goals=8,
+                assists=5,
+                minutes_played=1420,
+            ),
+            TopScorer(
+                player=PlayerDetailed(
+                    id=2005,
+                    name="Veton Berisha",
+                    position="Forward",
+                    date_of_birth=date(1994, 4, 13),
+                    nationality="Norway",
+                ),
+                goals=8,
+                assists=3,
+                minutes_played=1400,
+            ),
+        ]
+    
     async def _get_card_stats(self) -> List[TeamStatsDetailed]:
         return [
             TeamStatsDetailed(
@@ -449,8 +540,67 @@ class DetailedStatsService:
             ),
         ]
     
+    async def _get_norway_card_stats(self) -> List[TeamStatsDetailed]:
+        return [
+            TeamStatsDetailed(
+                team_id=2001,
+                team_name="Bodø/Glimt",
+                yellow_cards=40,
+                red_cards=2,
+                total_cards=42,
+            ),
+            TeamStatsDetailed(
+                team_id=2002,
+                team_name="Molde",
+                yellow_cards=38,
+                red_cards=1,
+                total_cards=39,
+            ),
+            TeamStatsDetailed(
+                team_id=2003,
+                team_name="Rosenborg",
+                yellow_cards=36,
+                red_cards=1,
+                total_cards=37,
+            ),
+            TeamStatsDetailed(
+                team_id=2004,
+                team_name="Vålerenga",
+                yellow_cards=34,
+                red_cards=0,
+                total_cards=34,
+            ),
+            TeamStatsDetailed(
+                team_id=2005,
+                team_name="Brann",
+                yellow_cards=33,
+                red_cards=1,
+                total_cards=34,
+            ),
+            TeamStatsDetailed(
+                team_id=2006,
+                team_name="Sarpsborg 08",
+                yellow_cards=32,
+                red_cards=0,
+                total_cards=32,
+            ),
+            TeamStatsDetailed(
+                team_id=2007,
+                team_name="Lillestrøm",
+                yellow_cards=31,
+                red_cards=1,
+                total_cards=32,
+            ),
+            TeamStatsDetailed(
+                team_id=2008,
+                team_name="Odd",
+                yellow_cards=30,
+                red_cards=0,
+                total_cards=30,
+            ),
+        ]
+    
     async def _get_suspensions(self) -> List[Suspension]:
-        """Get suspensions with REAL Serie A 2025/2026 data"""
         return [
             Suspension(
                 player=PlayerDetailed(
@@ -513,6 +663,9 @@ class DetailedStatsService:
                 description="Somma di ammonizioni, salta Lecce-Roma (19ª giornata)",
             ),
         ]
+    
+    async def _get_norway_suspensions(self) -> List[Suspension]:
+        return []
     
     async def _create_match_card(self, match: Any) -> LiveMatchCard:
         """Create detailed match card with REAL key players for 2025/2026"""

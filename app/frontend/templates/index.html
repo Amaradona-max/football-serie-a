@@ -271,14 +271,14 @@
                         if (currentLeague === 'seriea') {
                             await loadTopScorers();
                         } else {
-                            showError(sectionId, 'Sezione disponibile solo per la Serie A');
+                            await loadTopScorersNorway();
                         }
                         break;
                     case 'cards':
                         if (currentLeague === 'seriea') {
                             await loadCardsStats();
                         } else {
-                            showError(sectionId, 'Sezione disponibile solo per la Serie A');
+                            await loadCardsStatsNorway();
                         }
                         break;
                     case 'predictions':
@@ -855,9 +855,78 @@
             `;
         }
 
+        async function loadTopScorersNorway() {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/norway`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('scorers-container');
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Giocatore</th>
+                                <th class="px-4 py-2 text-left">Nazionalità</th>
+                                <th class="px-4 py-2 text-center">Goal</th>
+                                <th class="px-4 py-2 text-center">Assist</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.top_scorers.map((scorer, index) => `
+                                <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100">
+                                    <td class="px-4 py-2 font-medium">${scorer.player.name}</td>
+                                    <td class="px-4 py-2 text-gray-600">${scorer.player.nationality}</td>
+                                    <td class="px-4 py-2 text-center font-bold">${scorer.goals}</td>
+                                    <td class="px-4 py-2 text-center">${scorer.assists || 0}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
         // Load cards stats
         async function loadCardsStats() {
             const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+            
+            const container = document.getElementById('cards-container');
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-4">🟨 Cartellini Gialli</h3>
+                        ${data.card_stats.sort((a, b) => b.yellow_cards - a.yellow_cards).slice(0, 5).map(team => `
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span class="font-medium">${team.team_name}</span>
+                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">${team.yellow_cards}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-4">🟥 Cartellini Rossi</h3>
+                        ${data.card_stats.sort((a, b) => b.red_cards - a.red_cards).slice(0, 5).map(team => `
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span class="font-medium">${team.team_name}</span>
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${team.red_cards}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadCardsStatsNorway() {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/norway`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
