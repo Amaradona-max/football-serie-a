@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -111,6 +111,7 @@ class PredictionInput(BaseModel):
     previous_meetings: List[Dict[str, Any]]
 
 class PredictionOutput(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     home_win_prob: float
     draw_prob: float
     away_win_prob: float
