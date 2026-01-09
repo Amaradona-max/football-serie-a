@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serie A 2025/2026 - Previsioni Live</title>
+    <title>Global Football Live Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -27,8 +27,8 @@
         <div class="container mx-auto px-4 py-6">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold">Serie A 2025/2026</h1>
-                    <p class="text-blue-200">Previsioni Live e Analisi in Tempo Reale</p>
+                    <h1 id="league-title" class="text-3xl font-bold">Serie A 2025/2026</h1>
+                    <p id="league-subtitle" class="text-blue-200">Previsioni Live e Analisi in Tempo Reale</p>
                 </div>
                 <div class="text-right">
                     <div class="text-sm text-blue-200">Ultimo aggiornamento: <span id="last-updated">--:--</span></div>
@@ -41,6 +41,14 @@
     <!-- Navigation Buttons -->
     <nav class="bg-white shadow-md">
         <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-start mb-3 space-x-2">
+                <button id="league-seriea-btn" onclick="setLeague('seriea')" class="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm">
+                    Serie A
+                </button>
+                <button id="league-norway-btn" onclick="setLeague('norway')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                    Eliteserien Norvegia
+                </button>
+            </div>
             <div class="grid grid-cols-2 md:grid-cols-7 gap-2">
                 <button onclick="showSection('live-matches')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
                     📊 Live
@@ -83,7 +91,7 @@
 
         <!-- Standings Section -->
         <section id="standings" class="section hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">🏆 Classifica Serie A</h2>
+            <h2 id="standings-title" class="text-2xl font-bold mb-6 text-gray-800">🏆 Classifica Serie A</h2>
             <div id="standings-container">
                 <div class="text-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -127,7 +135,19 @@
 
         <!-- Finished Matches Section -->
         <section id="finished" class="section hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">✅ Partite Concluse</h2>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">✅ Partite Concluse</h2>
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <div>
+                    <label for="finished-matchday" class="block text-sm font-medium text-gray-700">Giornata</label>
+                    <input id="finished-matchday" type="number" min="1" class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Tutte">
+                </div>
+                <button onclick="loadSectionData('finished')" class="mt-5 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    Aggiorna
+                </button>
+                <button onclick="document.getElementById('finished-matchday').value='';loadSectionData('finished')" class="mt-5 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                    Tutta la stagione
+                </button>
+            </div>
             <div id="finished-matches-container">
                 <div class="text-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -138,7 +158,19 @@
 
         <!-- Analysis Section -->
         <section id="analysis" class="section hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">📈 Analisi Giornaliera</h2>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">📈 Analisi Giornaliera</h2>
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <div>
+                    <label for="analysis-date" class="block text-sm font-medium text-gray-700">Data</label>
+                    <input id="analysis-date" type="date" class="mt-1 block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button onclick="loadSectionData('analysis')" class="mt-5 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    Aggiorna
+                </button>
+                <button onclick="document.getElementById('analysis-date').value='';loadSectionData('analysis')" class="mt-5 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                    Oggi
+                </button>
+            </div>
             <div id="analysis-container">
                 <div class="text-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -151,7 +183,7 @@
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-6 mt-12">
         <div class="container mx-auto px-4 text-center">
-            <p>© 2025 Serie A Previsioni Live - Sistema di analisi in tempo reale</p>
+            <p>© 2025 Global Football Live Analytics - Sistema di analisi in tempo reale</p>
             <p class="text-sm text-gray-400 mt-2">Dati aggiornati da multiple fonti ufficiali</p>
         </div>
     </footer>
@@ -163,6 +195,7 @@
 
         // Current state
         let currentSection = 'live-matches';
+        let currentLeague = 'seriea';
         let autoRefreshInterval;
 
         // Show specific section
@@ -180,30 +213,94 @@
             loadSectionData(sectionId);
         }
 
-        // Load data for specific section
+        function setLeague(league) {
+            currentLeague = league;
+            const titleEl = document.getElementById('league-title');
+            const subtitleEl = document.getElementById('league-subtitle');
+            const standingsTitleEl = document.getElementById('standings-title');
+            const serieABtn = document.getElementById('league-seriea-btn');
+            const norwayBtn = document.getElementById('league-norway-btn');
+
+            if (league === 'seriea') {
+                if (titleEl) titleEl.textContent = 'Serie A 2025/2026';
+                if (subtitleEl) subtitleEl.textContent = 'Previsioni Live e Analisi in Tempo Reale';
+                if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Serie A';
+                if (serieABtn) {
+                    serieABtn.classList.add('bg-blue-900', 'text-white');
+                    serieABtn.classList.remove('bg-gray-200', 'text-gray-700');
+                }
+                if (norwayBtn) {
+                    norwayBtn.classList.add('bg-gray-200', 'text-gray-700');
+                    norwayBtn.classList.remove('bg-blue-900', 'text-white');
+                }
+            } else {
+                if (titleEl) titleEl.textContent = 'Eliteserien Norvegese';
+                if (subtitleEl) subtitleEl.textContent = 'Dati live e classifica del campionato norvegese';
+                if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Eliteserien';
+                if (norwayBtn) {
+                    norwayBtn.classList.add('bg-blue-900', 'text-white');
+                    norwayBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                }
+                if (serieABtn) {
+                    serieABtn.classList.add('bg-gray-200', 'text-gray-700');
+                    serieABtn.classList.remove('bg-blue-900', 'text-white');
+                }
+            }
+
+            loadSectionData(currentSection);
+        }
+
         async function loadSectionData(sectionId) {
             try {
                 switch(sectionId) {
                     case 'live-matches':
-                        await loadLiveMatches();
+                        if (currentLeague === 'seriea') {
+                            await loadLiveMatches();
+                        } else {
+                            await loadLiveMatchesNorway();
+                        }
                         break;
                     case 'standings':
-                        await loadStandings();
+                        if (currentLeague === 'seriea') {
+                            await loadStandings();
+                        } else {
+                            await loadStandingsNorway();
+                        }
                         break;
                     case 'scorers':
-                        await loadTopScorers();
+                        if (currentLeague === 'seriea') {
+                            await loadTopScorers();
+                        } else {
+                            showError(sectionId, 'Sezione disponibile solo per la Serie A');
+                        }
                         break;
                     case 'cards':
-                        await loadCardsStats();
+                        if (currentLeague === 'seriea') {
+                            await loadCardsStats();
+                        } else {
+                            showError(sectionId, 'Sezione disponibile solo per la Serie A');
+                        }
                         break;
                     case 'predictions':
-                        await loadPredictions();
+                        if (currentLeague === 'seriea') {
+                            await loadPredictions();
+                        } else {
+                            await loadPredictionsNorway();
+                        }
                         break;
                     case 'finished':
-                        await loadFinishedMatches();
+                        if (currentLeague === 'seriea') {
+                            await loadFinishedMatches();
+                        } else {
+                            await loadFinishedMatchesNorway();
+                        }
                         break;
                     case 'analysis':
-                        await loadDailyAnalysis();
+                        if (currentLeague === 'seriea') {
+                            await loadDailyAnalysis();
+                        } else {
+                            await loadDailyAnalysisNorway();
+                        }
                         break;
                 }
             } catch (error) {
@@ -319,6 +416,79 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        async function loadLiveMatchesNorway() {
+            const response = await fetch(`${API_BASE_URL}/norway/fixtures/live`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('live-matches-container');
+
+            if (!Array.isArray(data)) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento dati Norvegia</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console</p>
+                    </div>
+                `;
+                console.error('API Norway returned non-array data:', data);
+                return;
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in corso in Eliteserien</h3>
+                        <p class="text-gray-600">Torna più tardi per le partite live</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => {
+                const kickoff = new Date(match.utc_date);
+                const kickoffText = kickoff.toLocaleString('it-IT', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const scoreObj = match.score && match.score.full_time ? match.score.full_time : null;
+                const scoreText = scoreObj && scoreObj.home != null && scoreObj.away != null
+                    ? `${scoreObj.home}-${scoreObj.away}`
+                    : 'VS';
+
+                const minute = match.minute;
+                const statusLabel = minute ? `${minute}'` : match.status;
+
+                const homeTeamName = match.home_team && match.home_team.name ? match.home_team.name : 'Casa';
+                const awayTeamName = match.away_team && match.away_team.name ? match.away_team.name : 'Trasferta';
+
+                return `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                ${statusLabel}
+                            </span>
+                            <span class="text-sm">${scoreText}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${homeTeamName} - ${awayTeamName}</h3>
+                        <div class="text-center text-xs text-blue-100 mt-1">
+                            ${kickoffText} • ${match.competition}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
 
         // Load next matchday predictions
@@ -465,6 +635,91 @@
             }).join('');
         }
 
+        async function loadPredictionsNorway() {
+            const response = await fetch(`${API_BASE_URL}/norway/predictions/next-matchday`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('predictions-container');
+
+            if (!Array.isArray(data)) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento previsioni Norvegia</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console</p>
+                    </div>
+                `;
+                console.error('API Norway predictions returned non-array data:', data);
+                return;
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in programma in Eliteserien</h3>
+                        <p class="text-gray-600">Torna più tardi per le previsioni della prossima giornata</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => {
+                const kickoff = match.kickoff ? new Date(match.kickoff) : null;
+                const kickoffText = kickoff ? kickoff.toLocaleString('it-IT', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '';
+
+                const p = match.prediction;
+
+                return `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                Giornata ${match.matchday || '-'}
+                            </span>
+                            <span class="text-sm">${kickoffText}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                    </div>
+
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">📊 Pronostico ML (Eliteserien)</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-red-100 p-2 rounded">
+                                <div class="text-sm text-red-600">1</div>
+                                <div class="font-bold text-red-700">${(p.home_win_prob * 100).toFixed(1)}%</div>
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded">
+                                <div class="text-sm text-gray-600">X</div>
+                                <div class="font-bold text-gray-700">${(p.draw_prob * 100).toFixed(1)}%</div>
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded">
+                                <div class="text-sm text-blue-600">2</div>
+                                <div class="font-bold text-blue-700">${(p.away_win_prob * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-2 text-sm text-gray-600">
+                            Risultato più probabile: ${p.predicted_score ? p.predicted_score.home + '-' + p.predicted_score.away : 'n/d'}
+                        </div>
+                        <div class="text-center mt-1 text-xs text-gray-500">
+                            Confidenza modello: ${(p.confidence * 100).toFixed(1)}% • ${p.model_version}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
         // Helper function for rhythm color
         function getRhythmColor(score) {
             if (score >= 80) return 'text-green-600';
@@ -498,6 +753,57 @@
                         </thead>
                         <tbody>
                             ${data.standings.standings.map((team, index) => `
+                                <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100">
+                                    <td class="px-4 py-2 font-bold">${team.position}</td>
+                                    <td class="px-4 py-2 font-medium">${team.team.name}</td>
+                                    <td class="px-4 py-2 text-center">${team.points}</td>
+                                    <td class="px-4 py-2 text-center">${team.won}</td>
+                                    <td class="px-4 py-2 text-center">${team.goals_for}</td>
+                                    <td class="px-4 py-2 text-center">${team.goals_against}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function loadStandingsNorway() {
+            const response = await fetch(`${API_BASE_URL}/norway/standings`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('standings-container');
+            if (!data || !Array.isArray(data.standings)) {
+                container.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <div class="text-red-600 text-4xl mb-2">⚠️</div>
+                        <h3 class="text-red-800 font-semibold">Errore</h3>
+                        <p class="text-red-600">Impossibile caricare la classifica norvegese</p>
+                    </div>
+                `;
+                console.error('Unexpected Norway standings payload', data);
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Pos</th>
+                                <th class="px-4 py-2 text-left">Squadra</th>
+                                <th class="px-4 py-2 text-center">P</th>
+                                <th class="px-4 py-2 text-center">V</th>
+                                <th class="px-4 py-2 text-center">GF</th>
+                                <th class="px-4 py-2 text-center">GS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.standings.map((team, index) => `
                                 <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100">
                                     <td class="px-4 py-2 font-bold">${team.position}</td>
                                     <td class="px-4 py-2 font-medium">${team.team.name}</td>
@@ -584,9 +890,22 @@
             `;
         }
 
-        // Load finished matches
+        function getSelectedFinishedMatchday() {
+            const input = document.getElementById('finished-matchday');
+            if (!input || !input.value) return null;
+            const value = parseInt(input.value, 10);
+            if (isNaN(value) || value <= 0) return null;
+            return value;
+        }
+
         async function loadFinishedMatches() {
-            const response = await fetch(`${API_BASE_URL}/detailed/matches/finished`, {
+            const matchday = getSelectedFinishedMatchday();
+            let url = `${API_BASE_URL}/detailed/matches/finished`;
+            if (matchday !== null) {
+                url += `?matchday=${matchday}`;
+            }
+
+            const response = await fetch(url, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -594,6 +913,17 @@
             const matches = await response.json();
             
             const container = document.getElementById('finished-matches-container');
+            if (!Array.isArray(matches) || matches.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">😴</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Nessuna partita conclusa trovata</h3>
+                        <p class="text-gray-600 mt-1">Modifica la giornata o riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
+
             container.innerHTML = matches.map(match => `
                 <div class="bg-white rounded-lg shadow p-4 mb-4">
                     <div class="flex justify-between items-center mb-3">
@@ -604,29 +934,112 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <h4 class="font-semibold text-gray-700 mb-2">⚽ Goal</h4>
-                            ${match.goals.map(goal => `
-                                <div class="text-sm text-gray-600">
-                                    ${goal.player} (${goal.minute}') - ${goal.team}
-                                </div>
-                            `).join('')}
+                            ${
+                                match.goals && match.goals.length > 0
+                                    ? match.goals.map(goal => `
+                                        <div class="text-sm text-gray-600">
+                                            ${goal.player || 'Giocatore sconosciuto'} (${goal.minute}') - ${goal.team || ''}
+                                        </div>
+                                    `).join('')
+                                    : `<div class="text-sm text-gray-500">Nessun goal registrato</div>`
+                            }
                         </div>
                         
                         <div>
                             <h4 class="font-semibold text-gray-700 mb-2">🟨 Cartellini</h4>
-                            ${match.cards.map(card => `
-                                <div class="text-sm text-gray-600">
-                                    ${card.player} (${card.minute}') - ${card.card === 'yellow' ? '🟨' : '🟥'}
-                                </div>
-                            `).join('')}
+                            ${
+                                match.cards && match.cards.length > 0
+                                    ? match.cards.map(card => `
+                                        <div class="text-sm text-gray-600">
+                                            ${card.player || 'Giocatore sconosciuto'} (${card.minute}') - ${card.card === 'yellow' ? '🟨' : '🟥'}
+                                        </div>
+                                    `).join('')
+                                    : `<div class="text-sm text-gray-500">Nessun cartellino registrato</div>`
+                            }
+                    </div>
+                </div>
+            </div>
+            `).join('');
+        }
+
+        async function loadFinishedMatchesNorway() {
+            const matchday = getSelectedFinishedMatchday();
+            let url = `${API_BASE_URL}/detailed/matches/finished/norway`;
+            if (matchday !== null) {
+                url += `?matchday=${matchday}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const matches = await response.json();
+            
+            const container = document.getElementById('finished-matches-container');
+            if (!Array.isArray(matches) || matches.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">😴</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Nessuna partita conclusa trovata</h3>
+                        <p class="text-gray-600 mt-1">Modifica la giornata o riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = matches.map(match => `
+                <div class="bg-white rounded-lg shadow p-4 mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-lg">${match.home_team} ${match.score} ${match.away_team}</h3>
+                        <span class="text-sm text-gray-500">Giornata ${match.matchday}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">⚽ Goal</h4>
+                            ${
+                                match.goals && match.goals.length > 0
+                                    ? match.goals.map(goal => `
+                                        <div class="text-sm text-gray-600">
+                                            ${goal.player || 'Giocatore sconosciuto'} (${goal.minute}') - ${goal.team || ''}
+                                        </div>
+                                    `).join('')
+                                    : `<div class="text-sm text-gray-500">Nessun goal registrato</div>`
+                            }
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">🟨 Cartellini</h4>
+                            ${
+                                match.cards && match.cards.length > 0
+                                    ? match.cards.map(card => `
+                                        <div class="text-sm text-gray-600">
+                                            ${card.player || 'Giocatore sconosciuto'} (${card.minute}') - ${card.card === 'yellow' ? '🟨' : '🟥'}
+                                        </div>
+                                    `).join('')
+                                    : `<div class="text-sm text-gray-500">Nessun cartellino registrato</div>`
+                            }
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Load daily analysis
+        function getSelectedAnalysisDate() {
+            const input = document.getElementById('analysis-date');
+            if (!input || !input.value) return null;
+            return input.value;
+        }
+
         async function loadDailyAnalysis() {
-            const response = await fetch(`${API_BASE_URL}/detailed/analysis/daily`, {
+            const dateStr = getSelectedAnalysisDate();
+            let url = `${API_BASE_URL}/detailed/analysis/daily`;
+            if (dateStr) {
+                url += `?analysis_date=${dateStr}`;
+            }
+
+            const response = await fetch(url, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -634,6 +1047,149 @@
             const analysis = await response.json();
             
             const container = document.getElementById('analysis-container');
+            if (!analysis || analysis.total_matches === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Nessuna partita trovata per questa data</h3>
+                        <p class="text-gray-600 mt-1">Seleziona un altro giorno o prova con oggi.</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">📊 Statistiche Giornata</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Partite:</span>
+                                <span class="font-bold">${analysis.total_matches}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal totali:</span>
+                                <span class="font-bold">${analysis.total_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal casa:</span>
+                                <span class="font-bold">${analysis.home_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal trasferta:</span>
+                                <span class="font-bold">${analysis.away_goals}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Media goal:</span>
+                                <span class="font-bold">${analysis.average_goals_per_match}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Cartellini:</span>
+                                <span class="font-bold">${analysis.total_cards}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Media cartellini:</span>
+                                <span class="font-bold">${analysis.average_cards_per_match}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">🏆 Risultati</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Vittorie casa:</span>
+                                <span class="font-bold">${analysis.home_wins}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Vittorie trasferta:</span>
+                                <span class="font-bold">${analysis.away_wins}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Pareggi:</span>
+                                <span class="font-bold">${analysis.draws}</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>% Casa / Trasferta / Pareggi:</span>
+                                <span class="font-bold">
+                                    ${analysis.home_win_percentage}% /
+                                    ${analysis.away_win_percentage}% /
+                                    ${analysis.draw_percentage}%
+                                </span>
+                            </div>
+                            <div class="border-t border-gray-200 my-2"></div>
+                            <div class="flex justify-between">
+                                <span>Over 2.5 goal:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_over_25_goals} (${analysis.total_matches > 0 ? ((analysis.matches_over_25_goals / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Goal entrambe le squadre:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_both_teams_score} (${analysis.total_matches > 0 ? ((analysis.matches_both_teams_score / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Clean sheet:</span>
+                                <span class="font-bold">
+                                    ${analysis.clean_sheets} (${analysis.total_matches > 0 ? ((analysis.clean_sheets / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Partite con rosso:</span>
+                                <span class="font-bold">
+                                    ${analysis.matches_with_red_card} (${analysis.total_matches > 0 ? ((analysis.matches_with_red_card / analysis.total_matches) * 100).toFixed(1) : 0}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">⭐ Highlights</h3>
+                        <div class="space-y-2">
+                            <div>
+                                <span class="text-sm text-gray-600">Partita più produttiva:</span>
+                                <div class="font-medium">${analysis.most_productive_match}</div>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Partita più disciplinata:</span>
+                                <div class="font-medium">${analysis.most_disciplined_match}</div>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Vittoria più larga:</span>
+                                <div class="font-medium">${analysis.biggest_win}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDailyAnalysisNorway() {
+            const dateStr = getSelectedAnalysisDate();
+            let url = `${API_BASE_URL}/detailed/analysis/norway/daily`;
+            if (dateStr) {
+                url += `?analysis_date=${dateStr}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const analysis = await response.json();
+            
+            const container = document.getElementById('analysis-container');
+            if (!analysis || analysis.total_matches === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Nessuna partita trovata per questa data</h3>
+                        <p class="text-gray-600 mt-1">Seleziona un altro giorno o prova con oggi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">

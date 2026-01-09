@@ -102,6 +102,62 @@ class UnifiedDataService:
         
         return []
     
+    async def get_live_matches_norway(self) -> List[MatchLive]:
+        cache_key = f"live_matches_norway:{datetime.now().strftime('%Y-%m-%d')}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "live_matches_norway", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "live_matches_norway", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_live_matches(league_id=settings.NORWAY_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_LIVE)
+                monitor_api_call(provider.provider_name, "live_matches_norway", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "live_matches_norway", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_fixtures_norway(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        cache_key = f"fixtures_norway:{matchday if matchday is not None else 'all'}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "fixtures_norway", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "fixtures_norway", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_fixtures(matchday=matchday, league_id=settings.NORWAY_LEAGUE_ID)
+            if isinstance(result, list) and not result:
+                result = None
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "fixtures_norway", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "fixtures_norway", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
     async def get_match_by_id(self, match_id: int) -> Optional[MatchHistorical]:
         cache_key = f"match:{match_id}"
         
@@ -173,6 +229,34 @@ class UnifiedDataService:
                 continue
         
         # Try stale data
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return None
+    
+    async def get_standings_norway(self) -> Optional[Standings]:
+        cache_key = "standings_norway:current"
+        
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "standings_norway", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "standings_norway", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_standings(league_id=settings.NORWAY_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "standings_norway", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "standings_norway", "error")
+            await self._handle_provider_failure(provider, e)
+        
         stale_data = await self._get_stale_data(cache_key)
         if stale_data:
             track_fallback_activation("stale_cache")

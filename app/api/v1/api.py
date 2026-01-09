@@ -23,6 +23,20 @@ async def get_live_fixtures(api_key: str = Depends(verify_api_key)):
         monitor_api_call("api", "fixtures_live", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/norway/fixtures/live", response_model=List[MatchLive])
+async def get_live_fixtures_norway(api_key: str = Depends(verify_api_key)):
+    """
+    Get live matches from Norway Eliteserien.
+    """
+    try:
+        monitor_api_call("api", "fixtures_live_norway", "request")
+        matches = await unified_data_service.get_live_matches_norway()
+        monitor_api_call("api", "fixtures_live_norway", "success")
+        return matches
+    except Exception as e:
+        monitor_api_call("api", "fixtures_live_norway", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/fixtures/{match_id}", response_model=MatchHistorical)
 async def get_fixture_by_id(
     match_id: int, 
@@ -62,6 +76,24 @@ async def get_standings(api_key: str = Depends(verify_api_key)):
         raise
     except Exception as e:
         monitor_api_call("api", "standings", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/norway/standings", response_model=Standings)
+async def get_standings_norway(api_key: str = Depends(verify_api_key)):
+    """
+    Get current Norway Eliteserien standings.
+    """
+    try:
+        monitor_api_call("api", "standings_norway", "request")
+        standings = await unified_data_service.get_standings_norway()
+        if not standings:
+            raise HTTPException(status_code=404, detail="Standings not available")
+        monitor_api_call("api", "standings_norway", "success")
+        return standings
+    except HTTPException:
+        raise
+    except Exception as e:
+        monitor_api_call("api", "standings_norway", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/health")
@@ -111,6 +143,21 @@ async def get_next_matchday_predictions(api_key: str = Depends(verify_api_key)):
         return predictions
     except Exception as e:
         monitor_api_call("api", "predictions", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/norway/predictions/next-matchday")
+async def get_next_matchday_predictions_norway(api_key: str = Depends(verify_api_key)):
+    """
+    Get predictions for the next matchday of Norway Eliteserien.
+    """
+    try:
+        monitor_api_call("api", "norway_predictions", "request")
+        from app.ml.service import prediction_service
+        predictions = await prediction_service.predict_next_matchday_norway()
+        monitor_api_call("api", "norway_predictions", "success")
+        return predictions
+    except Exception as e:
+        monitor_api_call("api", "norway_predictions", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 async def _check_redis_health() -> str:

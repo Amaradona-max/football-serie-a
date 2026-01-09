@@ -18,7 +18,7 @@ def create_app() -> FastAPI:
     configure_logging()
     
     app = FastAPI(
-        title="Football Serie A Prediction System",
+        title="Global Football Live Analytics",
         description="Professional-grade football prediction system with hybrid data architecture",
         version="1.0.0",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",

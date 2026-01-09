@@ -932,5 +932,128 @@ class DetailedStatsService:
             biggest_win=biggest_win,
         )
 
+    async def _generate_daily_analysis_norway(self, analysis_date: date) -> DailyAnalysis:
+        fixtures = await unified_data_service.get_fixtures_norway()
+
+        matches_for_day = []
+        for match in fixtures:
+            match_date = getattr(match, "utc_date", None)
+            if match_date and match_date.date() == analysis_date:
+                matches_for_day.append(match)
+
+        total_matches = len(matches_for_day)
+        if total_matches == 0:
+            return DailyAnalysis(
+                date=analysis_date,
+                total_matches=0,
+                total_goals=0,
+                average_goals_per_match=0.0,
+                home_goals=0,
+                away_goals=0,
+                total_cards=0,
+                average_cards_per_match=0.0,
+                home_wins=0,
+                away_wins=0,
+                draws=0,
+                home_win_percentage=0.0,
+                away_win_percentage=0.0,
+                draw_percentage=0.0,
+                matches_over_25_goals=0,
+                matches_both_teams_score=0,
+                clean_sheets=0,
+                matches_with_red_card=0,
+                most_productive_match=None,
+                most_disciplined_match=None,
+                biggest_win=None,
+            )
+
+        total_goals = 0
+        home_goals = 0
+        away_goals = 0
+        home_wins = 0
+        away_wins = 0
+        draws = 0
+        matches_over_25_goals = 0
+        matches_both_teams_score = 0
+        clean_sheets = 0
+
+        most_productive_match = None
+        most_productive_goals = -1
+        biggest_win = None
+        biggest_win_margin = -1
+
+        for match in matches_for_day:
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+
+            home_goals_match = 0
+            away_goals_match = 0
+            if isinstance(full_time, dict):
+                home_goals_match = int(full_time.get("home") or 0)
+                away_goals_match = int(full_time.get("away") or 0)
+
+            home_goals += home_goals_match
+            away_goals += away_goals_match
+            goals_in_match = home_goals_match + away_goals_match
+            total_goals += goals_in_match
+
+            home_name = getattr(match.home_team, "name", str(match.home_team))
+            away_name = getattr(match.away_team, "name", str(match.away_team))
+
+            if home_goals_match > away_goals_match:
+                home_wins += 1
+            elif away_goals_match > home_goals_match:
+                away_wins += 1
+            else:
+                draws += 1
+
+            if goals_in_match > most_productive_goals:
+                most_productive_goals = goals_in_match
+                most_productive_match = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+
+            margin = abs(home_goals_match - away_goals_match)
+            if margin > biggest_win_margin and goals_in_match > 0:
+                biggest_win_margin = margin
+                biggest_win = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+
+            if goals_in_match > 2.5:
+                matches_over_25_goals += 1
+
+            if home_goals_match > 0 and away_goals_match > 0:
+                matches_both_teams_score += 1
+
+            if home_goals_match == 0 or away_goals_match == 0:
+                clean_sheets += 1
+
+        average_goals_per_match = round(total_goals / total_matches, 2)
+
+        home_win_percentage = round((home_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        away_win_percentage = round((away_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        draw_percentage = round((draws / total_matches) * 100, 1) if total_matches > 0 else 0.0
+
+        return DailyAnalysis(
+            date=analysis_date,
+            total_matches=total_matches,
+            total_goals=total_goals,
+            average_goals_per_match=average_goals_per_match,
+            home_goals=home_goals,
+            away_goals=away_goals,
+            total_cards=0,
+            average_cards_per_match=0.0,
+            home_wins=home_wins,
+            away_wins=away_wins,
+            draws=draws,
+            home_win_percentage=home_win_percentage,
+            away_win_percentage=away_win_percentage,
+            draw_percentage=draw_percentage,
+            matches_over_25_goals=matches_over_25_goals,
+            matches_both_teams_score=matches_both_teams_score,
+            clean_sheets=clean_sheets,
+            matches_with_red_card=0,
+            most_productive_match=most_productive_match,
+            most_disciplined_match=None,
+            biggest_win=biggest_win,
+        )
+
 # Global service instance
 detailed_stats_service = DetailedStatsService()

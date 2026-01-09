@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.data.providers.base import BaseDataProvider
-from app.data.models.common import MatchLive, MatchHistorical, Standings, Team, MatchStatus, MatchEvent, MatchEventType, Score, Provider
+from app.data.models.common import MatchLive, MatchHistorical, Standings, Team, MatchStatus, MatchEvent, MatchEventType, Score, Provider, TeamStats
 from app.core.config import settings
 
 class ApiFootballProvider(BaseDataProvider):
@@ -15,8 +15,9 @@ class ApiFootballProvider(BaseDataProvider):
             "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
         }
     
-    async def get_live_matches(self) -> List[MatchLive]:
-        url = f"{self.base_url}/fixtures?league={settings.SERIE_A_LEAGUE_ID}&season={settings.SEASON}&live=all"
+    async def get_live_matches(self, league_id: Optional[int] = None) -> List[MatchLive]:
+        league = league_id or settings.SERIE_A_LEAGUE_ID
+        url = f"{self.base_url}/fixtures?league={league}&season={settings.SEASON}&live=all"
         data = await self._make_request(url, self.headers)
         if not data or "response" not in data:
             return []
@@ -31,8 +32,9 @@ class ApiFootballProvider(BaseDataProvider):
         
         return self._parse_match(data["response"][0])
     
-    async def get_standings(self) -> Optional[Standings]:
-        url = f"{self.base_url}/standings?league={settings.SERIE_A_LEAGUE_ID}&season={settings.SEASON}"
+    async def get_standings(self, league_id: Optional[int] = None) -> Optional[Standings]:
+        league = league_id or settings.SERIE_A_LEAGUE_ID
+        url = f"{self.base_url}/standings?league={league}&season={settings.SEASON}"
         data = await self._make_request(url, self.headers)
         if not data or "response" not in data or not data["response"]:
             return None
@@ -47,8 +49,9 @@ class ApiFootballProvider(BaseDataProvider):
         
         return self._parse_team(data["response"][0])
     
-    async def get_fixtures(self, matchday: Optional[int] = None) -> List[MatchLive]:
-        url = f"{self.base_url}/fixtures?league={settings.SERIE_A_LEAGUE_ID}&season={settings.SEASON}"
+    async def get_fixtures(self, matchday: Optional[int] = None, league_id: Optional[int] = None) -> List[MatchLive]:
+        league = league_id or settings.SERIE_A_LEAGUE_ID
+        url = f"{self.base_url}/fixtures?league={league}&season={settings.SEASON}"
         if matchday:
             url += f"&round=Regular Season - {matchday}"
         
@@ -60,6 +63,7 @@ class ApiFootballProvider(BaseDataProvider):
     
     def _parse_match(self, match_data: Dict[str, Any]) -> MatchLive:
         fixture = match_data["fixture"]
+        league = match_data.get("league", {})
         teams = match_data["teams"]
         goals = match_data["goals"]
 
@@ -87,14 +91,31 @@ class ApiFootballProvider(BaseDataProvider):
         }
 
         mapped_status = status_map.get(status_short, MatchStatus.SCHEDULED)
+        competition_name = league.get("name", "Unknown")
+        season = league.get("season", settings.SEASON)
+        round_raw = league.get("round", "Unknown")
+        matchday = round_raw.split(" - ")[-1] if isinstance(round_raw, str) else round_raw
+        
+        home_team_data = {
+            "id": teams["home"]["id"],
+            "name": teams["home"]["name"],
+            "logo": teams["home"].get("logo"),
+            "country": league.get("country")
+        }
+        away_team_data = {
+            "id": teams["away"]["id"],
+            "name": teams["away"]["name"],
+            "logo": teams["away"].get("logo"),
+            "country": league.get("country")
+        }
         
         return MatchLive(
             id=fixture["id"],
-            competition="Serie A",
-            season=settings.SEASON,
-            matchday=match_data["league"].get("round", "Unknown").split(" - ")[-1],
-            home_team=self._parse_team({"id": teams["home"]["id"], "name": teams["home"]["name"]}),
-            away_team=self._parse_team({"id": teams["away"]["id"], "name": teams["away"]["name"]}),
+            competition=competition_name,
+            season=season,
+            matchday=matchday,
+            home_team=self._parse_team(home_team_data),
+            away_team=self._parse_team(away_team_data),
             utc_date=datetime.fromisoformat(fixture["date"].replace("Z", "+00:00")),
             status=mapped_status,
             minute=fixture["status"].get("elapsed"),
@@ -112,7 +133,7 @@ class ApiFootballProvider(BaseDataProvider):
             name=team_data["name"],
             short_name=team_data.get("shortName"),
             crest=team_data.get("logo"),
-            country="Italy",
+            country=team_data.get("country"),
             founded=None,
             venue=None
         )

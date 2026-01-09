@@ -20,18 +20,14 @@ class PredictionService:
             List of predictions for each match
         """
         try:
-            # Get fixtures for next matchday
             fixtures = await unified_data_service.get_fixtures()
-            
-            # Get current standings for team strength information
             standings = await unified_data_service.get_standings()
             
-            # Filter for upcoming matches (next 7 days)
-            upcoming_matches = [
-                match for match in fixtures
-                if match.date and match.date >= datetime.now()
-                and (match.date - datetime.now()).days <= 7
-            ]
+            upcoming_matches = []
+            for match in fixtures:
+                kickoff = getattr(match, "utc_date", None)
+                if kickoff and kickoff >= datetime.now() and (kickoff - datetime.now()).days <= 7:
+                    upcoming_matches.append(match)
             
             predictions = []
             for match in upcoming_matches:
@@ -47,6 +43,46 @@ class PredictionService:
             
         except Exception as e:
             logger.error(f"Error predicting next matchday: {e}")
+            raise
+    
+    async def predict_next_matchday_norway(self) -> List[dict]:
+        try:
+            fixtures = await unified_data_service.get_fixtures_norway()
+            standings = await unified_data_service.get_standings_norway()
+            
+            if not fixtures or not standings:
+                return []
+            
+            upcoming_matches = []
+            for match in fixtures:
+                kickoff = getattr(match, "utc_date", None)
+                if kickoff and kickoff >= datetime.now() and (kickoff - datetime.now()).days <= 7:
+                    upcoming_matches.append(match)
+            
+            results = []
+            for match in upcoming_matches:
+                prediction_input = await self._prepare_prediction_input(match, standings)
+                prediction = self.model.predict(prediction_input)
+                
+                home_team_name = getattr(match.home_team, "name", str(match.home_team))
+                away_team_name = getattr(match.away_team, "name", str(match.away_team))
+                kickoff = getattr(match, "utc_date", None)
+                
+                results.append(
+                    {
+                        "match_id": match.id,
+                        "home_team": home_team_name,
+                        "away_team": away_team_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff.isoformat() if kickoff else None,
+                        "prediction": prediction,
+                    }
+                )
+            
+            logger.info(f"Generated {len(results)} Norway predictions for next matchday")
+            return results
+        except Exception as e:
+            logger.error(f"Error predicting next matchday for Norway: {e}")
             raise
     
     async def predict_single_match(self, match_id: int) -> PredictionOutput:
@@ -93,27 +129,27 @@ class PredictionService:
         Returns:
             Prepared prediction input
         """
-        # Get team information from standings
-        home_team_info = self._get_team_info(match.home_team, standings)
-        away_team_info = self._get_team_info(match.away_team, standings)
+        home_team_name = getattr(match.home_team, "name", str(match.home_team))
+        away_team_name = getattr(match.away_team, "name", str(match.away_team))
         
-        # Get recent form (simplified - would come from data providers)
-        home_form = self._get_team_form(match.home_team)
-        away_form = self._get_team_form(match.away_team)
+        home_team_info = self._get_team_info(home_team_name, standings)
+        away_team_info = self._get_team_info(away_team_name, standings)
         
-        # Get previous meetings (simplified)
+        home_form = self._get_team_form(home_team_name)
+        away_form = self._get_team_form(away_team_name)
+        
         previous_meetings = await self._get_previous_meetings(
-            match.home_team, match.away_team
+            home_team_name, away_team_name
         )
         
         return PredictionInput(
-            home_team=match.home_team,
-            away_team=match.away_team,
-            home_position=home_team_info.get('position', 20),
-            away_position=away_team_info.get('position', 20),
+            home_team_id=home_team_info.get('id', 0),
+            away_team_id=away_team_info.get('id', 0),
             home_form=home_form,
             away_form=away_form,
-            is_home_advantage=True,  # Assuming home advantage
+            home_position=home_team_info.get('position', 20),
+            away_position=away_team_info.get('position', 20),
+            is_home_advantage=True,
             previous_meetings=previous_meetings
         )
     

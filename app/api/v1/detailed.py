@@ -8,7 +8,7 @@ from app.data.models.detailed import (
 )
 from app.services.biorhythm_service import bio_rhythm_service
 from app.data.services.unified_data_service import unified_data_service
-from app.data.models.common import MatchStatus, Score
+from app.data.models.common import MatchStatus, Score, MatchEventType
 from app.core.dependencies import verify_api_key
 from app.monitoring.metrics import monitor_api_call
 
@@ -124,6 +124,24 @@ async def get_daily_analysis(
         monitor_api_call("api", "daily_analysis", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/analysis/norway/daily", response_model=DailyAnalysis)
+async def get_daily_analysis_norway(
+    analysis_date: Optional[date] = Query(None, description="Data per l'analisi (default: oggi)"),
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        monitor_api_call("api", "daily_analysis_norway", "request")
+        
+        if analysis_date is None:
+            analysis_date = date.today()
+            
+        analysis = await detailed_stats_service._generate_daily_analysis_norway(analysis_date)
+        monitor_api_call("api", "daily_analysis_norway", "success")
+        return analysis
+    except Exception as e:
+        monitor_api_call("api", "daily_analysis_norway", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/bio-rhythm/player")
 async def calculate_player_bio_rhythm(
     birth_date: date = Query(..., description="Data di nascita del calciatore (YYYY-MM-DD)"),
@@ -233,6 +251,36 @@ async def get_finished_matches(
 
         result = []
         for match in finished:
+            events = getattr(match, "events", []) or []
+            goals = []
+            cards = []
+
+            for event in events:
+                event_type = getattr(event, "type", None)
+                if event_type == MatchEventType.GOAL:
+                    minute = getattr(event, "minute", None)
+                    extra_time = getattr(event, "extra_time", None)
+                    minute_display = f"{minute}+{extra_time}" if extra_time not in (None, 0) else minute
+                    goals.append(
+                        {
+                            "player": getattr(event, "player", None),
+                            "minute": minute_display,
+                            "team": getattr(event, "team", None),
+                        }
+                    )
+                elif event_type in (MatchEventType.YELLOW_CARD, MatchEventType.RED_CARD):
+                    minute = getattr(event, "minute", None)
+                    extra_time = getattr(event, "extra_time", None)
+                    minute_display = f"{minute}+{extra_time}" if extra_time not in (None, 0) else minute
+                    cards.append(
+                        {
+                            "player": getattr(event, "player", None),
+                            "minute": minute_display,
+                            "team": getattr(event, "team", None),
+                            "card": "yellow" if event_type == MatchEventType.YELLOW_CARD else "red",
+                        }
+                    )
+
             score_obj = getattr(match, "score", None)
             full_time = getattr(score_obj, "full_time", None) if isinstance(score_obj, Score) else None
             score_str = None
@@ -250,8 +298,8 @@ async def get_finished_matches(
                     "score": score_str,
                     "date": match.utc_date.date().isoformat(),
                     "matchday": match.matchday,
-                    "goals": [],
-                    "cards": [],
+                    "goals": goals,
+                    "cards": cards,
                 }
             )
 
@@ -265,4 +313,87 @@ async def get_finished_matches(
         return result
     except Exception as e:
         monitor_api_call("api", "finished_matches", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/matches/finished/norway")
+async def get_finished_matches_norway(
+    matchday: Optional[int] = Query(None, description="Giornata specifica (default: ultima giocata)"),
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Get finished matches for Norway Eliteserien with basic results.
+    """
+    try:
+        monitor_api_call("api", "finished_matches_norway", "request")
+        fixtures = await unified_data_service.get_fixtures_norway(matchday)
+        finished = [
+            match for match in fixtures
+            if getattr(match, "status", None) == MatchStatus.FINISHED
+        ]
+
+        result = []
+        for match in finished:
+            events = getattr(match, "events", []) or []
+            goals = []
+            cards = []
+
+            for event in events:
+                event_type = getattr(event, "type", None)
+                if event_type == MatchEventType.GOAL:
+                    minute = getattr(event, "minute", None)
+                    extra_time = getattr(event, "extra_time", None)
+                    minute_display = f"{minute}+{extra_time}" if extra_time not in (None, 0) else minute
+                    goals.append(
+                        {
+                            "player": getattr(event, "player", None),
+                            "minute": minute_display,
+                            "team": getattr(event, "team", None),
+                        }
+                    )
+                elif event_type in (MatchEventType.YELLOW_CARD, MatchEventType.RED_CARD):
+                    minute = getattr(event, "minute", None)
+                    extra_time = getattr(event, "extra_time", None)
+                    minute_display = f"{minute}+{extra_time}" if extra_time not in (None, 0) else minute
+                    cards.append(
+                        {
+                            "player": getattr(event, "player", None),
+                            "minute": minute_display,
+                            "team": getattr(event, "team", None),
+                            "card": "yellow" if event_type == MatchEventType.YELLOW_CARD else "red",
+                        }
+                    )
+
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if isinstance(score_obj, Score) else None
+            score_str = None
+            if isinstance(full_time, dict):
+                home_goals = full_time.get("home")
+                away_goals = full_time.get("away")
+                if home_goals is not None and away_goals is not None:
+                    score_str = f"{home_goals}-{away_goals}"
+
+            result.append(
+                {
+                    "match_id": match.id,
+                    "home_team": getattr(match.home_team, "name", str(match.home_team)),
+                    "away_team": getattr(match.away_team, "name", str(match.away_team)),
+                    "score": score_str,
+                    "date": match.utc_date.date().isoformat(),
+                    "matchday": match.matchday,
+                    "goals": goals,
+                    "cards": cards,
+                }
+            )
+
+        result = sorted(
+            result,
+            key=lambda m: (m["date"], m["match_id"]),
+            reverse=True,
+        )
+
+        monitor_api_call("api", "finished_matches_norway", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "finished_matches_norway", "error")
         raise HTTPException(status_code=500, detail=str(e))
