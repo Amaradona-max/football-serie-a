@@ -134,7 +134,7 @@ async def _generate_predictions():
 
 # Include all endpoints
 api_router = APIRouter()
-api_router.include_router(router, prefix="/v1", tags=["v1"])
+api_router.include_router(router, prefix="", tags=["v1"])
 
 # Include monitoring endpoints
 from app.monitoring.endpoints import router as monitoring_router
