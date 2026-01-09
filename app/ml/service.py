@@ -165,16 +165,9 @@ class PredictionService:
             Training accuracy
         """
         try:
-            # Convert to DataFrame for training
-            import pandas as pd
-            df = pd.DataFrame(historical_data)
-            
-            # Train the model
-            accuracy = self.model.train(df)
-            
+            accuracy = self.model.train(historical_data)
             logger.info(f"Model trained with accuracy: {accuracy:.3f}")
             return accuracy
-            
         except Exception as e:
             logger.error(f"Error training model: {e}")
             raise

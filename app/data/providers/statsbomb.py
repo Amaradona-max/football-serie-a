@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import pandas as pd
 from pathlib import Path
+import csv
 
 from app.data.providers.base import BaseDataProvider
 from app.data.models.common import MatchLive, MatchHistorical, Standings, Team, MatchStatus, MatchEvent, MatchEventType, Score, Provider
@@ -78,11 +78,13 @@ class StatsBombProvider(BaseDataProvider):
         return []
     
     def _load_from_csv(self, file_name: str):
-        # Helper method to load data from CSV files
         try:
             file_path = self.data_dir / file_name
-            if file_path.exists():
-                return pd.read_csv(file_path)
+            if not file_path.exists():
+                return None
+            with file_path.open(newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                return list(reader)
         except Exception as e:
             print(f"Error loading {file_name}: {e}")
-        return None
+            return None
