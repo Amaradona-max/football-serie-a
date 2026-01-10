@@ -103,8 +103,8 @@ class Standings(BaseModel):
 class PredictionInput(BaseModel):
     home_team_id: int
     away_team_id: int
-    home_form: str
-    away_form: str
+    home_form: Optional[str] = None
+    away_form: Optional[str] = None
     home_position: int
     away_position: int
     is_home_advantage: bool

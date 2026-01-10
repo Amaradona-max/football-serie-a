@@ -271,6 +271,11 @@ class UnifiedDataService:
             track_fallback_activation("stale_cache")
             return stale_data
         
+        mock_fixtures = self._get_mock_premier_fixtures(matchday)
+        if mock_fixtures:
+            track_fallback_activation("premier_mock_fixtures")
+            return mock_fixtures
+        
         return []
     
     async def get_fixtures_bundesliga(self, matchday: Optional[int] = None) -> List[MatchLive]:
@@ -300,6 +305,11 @@ class UnifiedDataService:
             track_fallback_activation("stale_cache")
             return stale_data
         
+        mock_fixtures = self._get_mock_bundesliga_fixtures(matchday)
+        if mock_fixtures:
+            track_fallback_activation("bundesliga_mock_fixtures")
+            return mock_fixtures
+        
         return []
     
     async def get_fixtures_laliga(self, matchday: Optional[int] = None) -> List[MatchLive]:
@@ -328,6 +338,11 @@ class UnifiedDataService:
         if stale_data:
             track_fallback_activation("stale_cache")
             return stale_data
+        
+        mock_fixtures = self._get_mock_laliga_fixtures(matchday)
+        if mock_fixtures:
+            track_fallback_activation("laliga_mock_fixtures")
+            return mock_fixtures
         
         return []
     
@@ -723,7 +738,205 @@ class UnifiedDataService:
             last_updated=datetime.now(),
             data_provider=Provider.API_FOOTBALL,
         )
-
+    
+    def _get_mock_premier_fixtures(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        base_day = datetime(today.year, today.month, today.day, 18, 0)
+        finished_matches = [
+            MatchLive(
+                id=4001,
+                competition="Premier League",
+                season=settings.SEASON,
+                matchday=18,
+                home_team=Team(id=3001, name="Manchester City"),
+                away_team=Team(id=3002, name="Liverpool"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 2, "away": 1}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4002,
+                competition="Premier League",
+                season=settings.SEASON,
+                matchday=18,
+                home_team=Team(id=3003, name="Arsenal"),
+                away_team=Team(id=3004, name="Tottenham"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 3, "away": 2}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        upcoming_matches = [
+            MatchLive(
+                id=4003,
+                competition="Premier League",
+                season=settings.SEASON,
+                matchday=19,
+                home_team=Team(id=3007, name="Manchester United"),
+                away_team=Team(id=3008, name="Chelsea"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4004,
+                competition="Premier League",
+                season=settings.SEASON,
+                matchday=19,
+                home_team=Team(id=3006, name="Newcastle"),
+                away_team=Team(id=3009, name="Brighton"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        if matchday == 18:
+            return finished_matches
+        if matchday == 19:
+            return upcoming_matches
+        return finished_matches + upcoming_matches
+    
+    def _get_mock_bundesliga_fixtures(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        base_day = datetime(today.year, today.month, today.day, 18, 0)
+        finished_matches = [
+            MatchLive(
+                id=4101,
+                competition="Bundesliga",
+                season=settings.SEASON,
+                matchday=18,
+                home_team=Team(id=3101, name="Bayern München"),
+                away_team=Team(id=3104, name="Borussia Dortmund"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 2, "away": 1}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4102,
+                competition="Bundesliga",
+                season=settings.SEASON,
+                matchday=18,
+                home_team=Team(id=3102, name="Bayer Leverkusen"),
+                away_team=Team(id=3103, name="RB Leipzig"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 3, "away": 2}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        upcoming_matches = [
+            MatchLive(
+                id=4103,
+                competition="Bundesliga",
+                season=settings.SEASON,
+                matchday=19,
+                home_team=Team(id=3105, name="Stuttgart"),
+                away_team=Team(id=3106, name="Eintracht Frankfurt"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4104,
+                competition="Bundesliga",
+                season=settings.SEASON,
+                matchday=19,
+                home_team=Team(id=3107, name="Freiburg"),
+                away_team=Team(id=3108, name="Hoffenheim"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        if matchday == 18:
+            return finished_matches
+        if matchday == 19:
+            return upcoming_matches
+        return finished_matches + upcoming_matches
+    
+    def _get_mock_laliga_fixtures(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        base_day = datetime(today.year, today.month, today.day, 18, 0)
+        finished_matches = [
+            MatchLive(
+                id=4201,
+                competition="La Liga",
+                season=settings.SEASON,
+                matchday=20,
+                home_team=Team(id=3201, name="Real Madrid"),
+                away_team=Team(id=3202, name="Barcelona"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 2, "away": 2}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4202,
+                competition="La Liga",
+                season=settings.SEASON,
+                matchday=20,
+                home_team=Team(id=3203, name="Girona"),
+                away_team=Team(id=3204, name="Atlético Madrid"),
+                utc_date=base_day - timedelta(days=2),
+                status=MatchStatus.FINISHED,
+                score=Score(full_time={"home": 1, "away": 0}),
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        upcoming_matches = [
+            MatchLive(
+                id=4203,
+                competition="La Liga",
+                season=settings.SEASON,
+                matchday=21,
+                home_team=Team(id=3205, name="Athletic Bilbao"),
+                away_team=Team(id=3206, name="Real Sociedad"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+            MatchLive(
+                id=4204,
+                competition="La Liga",
+                season=settings.SEASON,
+                matchday=21,
+                home_team=Team(id=3207, name="Betis"),
+                away_team=Team(id=3208, name="Villarreal"),
+                utc_date=base_day + timedelta(days=1),
+                status=MatchStatus.SCHEDULED,
+                score=None,
+                last_updated=datetime.now(),
+                data_provider=Provider.API_FOOTBALL,
+            ),
+        ]
+        if matchday == 20:
+            return finished_matches
+        if matchday == 21:
+            return upcoming_matches
+        return finished_matches + upcoming_matches
+    
     def _get_mock_norway_fixtures(self, matchday: Optional[int] = None) -> List[MatchLive]:
         from datetime import datetime, timedelta
         today = datetime.now()

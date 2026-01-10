@@ -462,21 +462,18 @@
                         } else if (currentLeague === 'premier') {
                             await Promise.all([
                                 loadModelQuality('premier'),
-                                loadDailyAnalysisPremier(),
                                 loadHistory2025Stats(),
                                 loadHistoryProgressStats()
                             ]);
                         } else if (currentLeague === 'bundesliga') {
                             await Promise.all([
                                 loadModelQuality('bundesliga'),
-                                loadDailyAnalysisBundesliga(),
                                 loadHistory2025Stats(),
                                 loadHistoryProgressStats()
                             ]);
                         } else if (currentLeague === 'laliga') {
                             await Promise.all([
                                 loadModelQuality('laliga'),
-                                loadDailyAnalysisLaLiga(),
                                 loadHistory2025Stats(),
                                 loadHistoryProgressStats()
                             ]);
@@ -562,21 +559,12 @@
                 const minSuccessThreshold = 70;
                 const maxTopMatches = 6;
 
-                const topMatches = sorted.filter(m => {
+                const filteredMatches = sorted.filter(m => {
                     const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
                     return acc >= minSuccessThreshold;
-                }).slice(0, maxTopMatches);
+                });
 
-                if (topMatches.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
-                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (filteredMatches.length > 0 ? filteredMatches : sorted).slice(0, maxTopMatches);
 
                 const blocks = [];
 
@@ -731,21 +719,12 @@
                 const minSuccessThreshold = 70;
                 const maxTopMatches = 6;
 
-                const topMatches = sorted.filter(m => {
+                const filteredMatches = sorted.filter(m => {
                     const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
                     return acc >= minSuccessThreshold;
-                }).slice(0, maxTopMatches);
+                });
 
-                if (topMatches.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
-                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (filteredMatches.length > 0 ? filteredMatches : sorted).slice(0, maxTopMatches);
 
                 const blocks = [];
 
@@ -900,21 +879,12 @@
                 const minSuccessThreshold = 70;
                 const maxTopMatches = 6;
 
-                const topMatches = sorted.filter(m => {
+                const filteredMatches = sorted.filter(m => {
                     const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
                     return acc >= minSuccessThreshold;
-                }).slice(0, maxTopMatches);
+                });
 
-                if (topMatches.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
-                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (filteredMatches.length > 0 ? filteredMatches : sorted).slice(0, maxTopMatches);
 
                 const blocks = [];
 
@@ -1069,21 +1039,12 @@
                 const minSuccessThreshold = 70;
                 const maxTopMatches = 6;
 
-                const topMatches = sorted.filter(m => {
+                const filteredMatches = sorted.filter(m => {
                     const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
                     return acc >= minSuccessThreshold;
-                }).slice(0, maxTopMatches);
+                });
 
-                if (topMatches.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
-                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (filteredMatches.length > 0 ? filteredMatches : sorted).slice(0, maxTopMatches);
 
                 const blocks = [];
 
@@ -1238,21 +1199,12 @@
                 const minSuccessThreshold = 70;
                 const maxTopMatches = 6;
 
-                const topMatches = sorted.filter(m => {
+                const filteredMatches = sorted.filter(m => {
                     const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
                     return acc >= minSuccessThreshold;
-                }).slice(0, maxTopMatches);
+                });
 
-                if (topMatches.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
-                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (filteredMatches.length > 0 ? filteredMatches : sorted).slice(0, maxTopMatches);
 
                 const blocks = [];
 
@@ -1424,29 +1376,17 @@
                 const minProbForTopPick = 70;
                 const minAccuracyForTopPick = 60;
 
-                const topMatches = [];
+                const selectedMatches = [];
                 for (const item of scored) {
-                    if (topMatches.length >= maxTopMatches) break;
+                    if (selectedMatches.length >= maxTopMatches) break;
                     const passesProb = item.maxProb >= minProbForTopPick;
                     const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
                     if (passesProb && passesAccuracy) {
-                        topMatches.push(item.match);
+                        selectedMatches.push(item.match);
                     }
                 }
 
-                if (topMatches.length === 0) {
-                    const noHighProbTitle = leagueLabel === 'Eliteserien'
-                        ? 'Nessuna gara con alta probabilità per la prossima giornata in Eliteserien'
-                        : 'Nessuna gara con alta probabilità per la prossima giornata';
-                    container.innerHTML = `
-                        <div class="col-span-full text-center py-12">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h3 class="text-xl font-semibold text-gray-700">${noHighProbTitle}</h3>
-                            <p class="text-gray-600">Il modello non individua al momento tre gare davvero forti su cui puntare.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const topMatches = (selectedMatches.length > 0 ? selectedMatches : scored.map(s => s.match).slice(0, maxTopMatches));
 
                 const blocks = [];
 
@@ -1611,7 +1551,7 @@
 
         async function loadPlayableMatchesPremier() {
             await renderPlayableMatchesForLeague(
-                `${API_BASE_URL}/detailed/matches/next/predictions/premier`,
+                `${API_BASE_URL}/premier/predictions/next-matchday`,
                 `${API_BASE_URL}/predictions/reliability/premier?last_n_matchdays=18`,
                 'Premier League',
                 'Campione top Premier League'
@@ -1620,7 +1560,7 @@
 
         async function loadPlayableMatchesBundesliga() {
             await renderPlayableMatchesForLeague(
-                `${API_BASE_URL}/detailed/matches/next/predictions/bundesliga`,
+                `${API_BASE_URL}/bundesliga/predictions/next-matchday`,
                 `${API_BASE_URL}/predictions/reliability/bundesliga?last_n_matchdays=18`,
                 'Bundesliga',
                 'Campione top Bundesliga'
@@ -1629,7 +1569,7 @@
 
         async function loadPlayableMatchesLaLiga() {
             await renderPlayableMatchesForLeague(
-                `${API_BASE_URL}/detailed/matches/next/predictions/laliga`,
+                `${API_BASE_URL}/laliga/predictions/next-matchday`,
                 `${API_BASE_URL}/predictions/reliability/laliga?last_n_matchdays=18`,
                 'La Liga',
                 'Campione top La Liga'
@@ -1856,11 +1796,11 @@
                     </div>
                 `;
             } catch (error) {
-                console.error('Error loading 2025 history stats:', error);
+                console.warn('Storico 2024–2025 non disponibile o caricamento interrotto:', error);
                 container.innerHTML = `
                     <div class="bg-white rounded-lg shadow p-4 h-full">
                         <h3 class="font-semibold text-gray-700 mb-2">📅 Storico 2024–2025</h3>
-                        <p class="text-sm text-red-600">Errore nel caricamento dello storico 2024–2025.</p>
+                        <p class="text-sm text-gray-600">Dati 2024–2025 non disponibili o non ancora calcolati.</p>
                     </div>
                 `;
             }
@@ -2917,6 +2857,16 @@
             const data = await response.json();
             
             const container = document.getElementById('scorers-container');
+            if (!data || !Array.isArray(data.top_scorers)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati marcatori non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full">
@@ -2952,6 +2902,16 @@
             const data = await response.json();
             
             const container = document.getElementById('scorers-container');
+            if (!data || !Array.isArray(data.top_scorers)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati marcatori non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full">
@@ -2979,7 +2939,7 @@
         }
         
         async function loadTopScorersPremier() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/premier`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -2987,6 +2947,16 @@
             const data = await response.json();
 
             const container = document.getElementById('scorers-container');
+            if (!data || !Array.isArray(data.top_scorers)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati marcatori non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full">
@@ -3014,7 +2984,7 @@
         }
 
         async function loadTopScorersBundesliga() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/bundesliga`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -3022,6 +2992,16 @@
             const data = await response.json();
 
             const container = document.getElementById('scorers-container');
+            if (!data || !Array.isArray(data.top_scorers)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati marcatori non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full">
@@ -3049,7 +3029,7 @@
         }
 
         async function loadTopScorersLaLiga() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/laliga`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -3057,6 +3037,16 @@
             const data = await response.json();
 
             const container = document.getElementById('scorers-container');
+            if (!data || !Array.isArray(data.top_scorers)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati marcatori non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full">
@@ -3093,6 +3083,16 @@
             const data = await response.json();
             
             const container = document.getElementById('cards-container');
+            if (!data || !Array.isArray(data.card_stats)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati cartellini non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">
@@ -3127,6 +3127,16 @@
             const data = await response.json();
             
             const container = document.getElementById('cards-container');
+            if (!data || !Array.isArray(data.card_stats)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati cartellini non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">
@@ -3153,7 +3163,7 @@
         }
 
         async function loadCardsStatsPremier() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/premier`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -3161,6 +3171,16 @@
             const data = await response.json();
 
             const container = document.getElementById('cards-container');
+            if (!data || !Array.isArray(data.card_stats)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati cartellini non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">
@@ -3187,7 +3207,7 @@
         }
 
         async function loadCardsStatsBundesliga() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/bundesliga`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -3195,6 +3215,16 @@
             const data = await response.json();
 
             const container = document.getElementById('cards-container');
+            if (!data || !Array.isArray(data.card_stats)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati cartellini non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">
@@ -3221,7 +3251,7 @@
         }
 
         async function loadCardsStatsLaLiga() {
-            const response = await fetch(`${API_BASE_URL}/detailed/stats/seriea`, {
+            const response = await fetch(`${API_BASE_URL}/detailed/stats/laliga`, {
                 headers: {
                     'X-API-Key': API_KEY
                 }
@@ -3229,6 +3259,16 @@
             const data = await response.json();
 
             const container = document.getElementById('cards-container');
+            if (!data || !Array.isArray(data.card_stats)) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-6 text-center">
+                        <div class="text-4xl mb-2">📭</div>
+                        <h3 class="text-lg font-semibold text-gray-800">Dati cartellini non disponibili</h3>
+                        <p class="text-gray-600 mt-1">Riprova più tardi.</p>
+                    </div>
+                `;
+                return;
+            }
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-4">
@@ -3392,7 +3432,7 @@
 
         async function loadFinishedMatchesPremier() {
             const matchday = getSelectedFinishedMatchday();
-            let url = `${API_BASE_URL}/detailed/matches/finished`;
+            let url = `${API_BASE_URL}/detailed/matches/finished/premier`;
             if (matchday !== null) {
                 url += `?matchday=${matchday}`;
             }
@@ -3456,7 +3496,7 @@
 
         async function loadFinishedMatchesBundesliga() {
             const matchday = getSelectedFinishedMatchday();
-            let url = `${API_BASE_URL}/detailed/matches/finished`;
+            let url = `${API_BASE_URL}/detailed/matches/finished/bundesliga`;
             if (matchday !== null) {
                 url += `?matchday=${matchday}`;
             }
@@ -3520,7 +3560,7 @@
 
         async function loadFinishedMatchesLaLiga() {
             const matchday = getSelectedFinishedMatchday();
-            let url = `${API_BASE_URL}/detailed/matches/finished`;
+            let url = `${API_BASE_URL}/detailed/matches/finished/laliga`;
             if (matchday !== null) {
                 url += `?matchday=${matchday}`;
             }
