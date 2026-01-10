@@ -339,7 +339,7 @@ class PredictionService:
             logger.error(f"Error training model: {e}")
             raise
 
-    async def _build_2025_training_data(self, league: Optional[str] = None) -> List[dict]:
+    async def _build_2024_2025_training_data(self, league: Optional[str] = None) -> List[dict]:
         fixtures_serie_a = None
         standings_serie_a = None
         fixtures_norway = None
@@ -371,7 +371,7 @@ class PredictionService:
             fixtures_laliga = await unified_data_service.get_fixtures_laliga(None)
             standings_laliga = await unified_data_service.get_standings_laliga()
 
-        start_date = date(2025, 8, 1)
+        start_date = date(2024, 1, 1)
         end_date = date(2025, 12, 31)
 
         training_data: List[dict] = []
@@ -496,28 +496,28 @@ class PredictionService:
         return training_data
 
     async def train_on_2025_history(self) -> dict:
-        data_2025 = await self._build_2025_training_data()
+        data_2024_2025 = await self._build_2024_2025_training_data()
         data_2026 = await self._build_2026_training_data()
 
-        historical_data = data_2025 + data_2026
+        historical_data = data_2024_2025 + data_2026
         if not historical_data:
             logger.info("No 2025/2026 historical data available for training")
             return {
                 "training_accuracy": 0.0,
                 "training_matches": 0,
-                "matches_2025": 0,
+                "matches_2024_2025": 0,
                 "matches_2026": 0,
             }
         accuracy = await self.train_model(historical_data)
         return {
             "training_accuracy": accuracy,
             "training_matches": len(historical_data),
-            "matches_2025": len(data_2025),
+            "matches_2024_2025": len(data_2024_2025),
             "matches_2026": len(data_2026),
         }
 
     async def get_2025_stats(self, league: Optional[str] = None) -> dict:
-        historical_data = await self._build_2025_training_data(league=None)
+        historical_data = await self._build_2024_2025_training_data(league=None)
         if not historical_data:
             return {
                 "accuracy_2025": 0.0,

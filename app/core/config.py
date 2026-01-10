@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     PREMIER_LEAGUE_ID: int = 39
     BUNDESLIGA_LEAGUE_ID: int = 78
     LA_LIGA_LEAGUE_ID: int = 140
-    SEASON: int = 2024
+    SEASON: int = 2025
     
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = 100
