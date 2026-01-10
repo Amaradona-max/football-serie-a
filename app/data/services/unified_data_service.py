@@ -163,6 +163,174 @@ class UnifiedDataService:
         
         return []
     
+    async def get_live_matches_premier(self) -> List[MatchLive]:
+        cache_key = f"live_matches_premier:{datetime.now().strftime('%Y-%m-%d')}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "live_matches_premier", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "live_matches_premier", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_live_matches(league_id=settings.PREMIER_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_LIVE)
+                monitor_api_call(provider.provider_name, "live_matches_premier", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "live_matches_premier", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_live_matches_bundesliga(self) -> List[MatchLive]:
+        cache_key = f"live_matches_bundesliga:{datetime.now().strftime('%Y-%m-%d')}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "live_matches_bundesliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "live_matches_bundesliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_live_matches(league_id=settings.BUNDESLIGA_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_LIVE)
+                monitor_api_call(provider.provider_name, "live_matches_bundesliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "live_matches_bundesliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_live_matches_laliga(self) -> List[MatchLive]:
+        cache_key = f"live_matches_laliga:{datetime.now().strftime('%Y-%m-%d')}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "live_matches_laliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "live_matches_laliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_live_matches(league_id=settings.LA_LIGA_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_LIVE)
+                monitor_api_call(provider.provider_name, "live_matches_laliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "live_matches_laliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_fixtures_premier(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        cache_key = f"fixtures_premier:{matchday if matchday is not None else 'all'}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "fixtures_premier", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "fixtures_premier", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_fixtures(matchday=matchday, league_id=settings.PREMIER_LEAGUE_ID)
+            if isinstance(result, list) and not result:
+                result = None
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "fixtures_premier", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "fixtures_premier", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_fixtures_bundesliga(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        cache_key = f"fixtures_bundesliga:{matchday if matchday is not None else 'all'}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "fixtures_bundesliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "fixtures_bundesliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_fixtures(matchday=matchday, league_id=settings.BUNDESLIGA_LEAGUE_ID)
+            if isinstance(result, list) and not result:
+                result = None
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "fixtures_bundesliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "fixtures_bundesliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
+    async def get_fixtures_laliga(self, matchday: Optional[int] = None) -> List[MatchLive]:
+        cache_key = f"fixtures_laliga:{matchday if matchday is not None else 'all'}"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "fixtures_laliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "fixtures_laliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_fixtures(matchday=matchday, league_id=settings.LA_LIGA_LEAGUE_ID)
+            if isinstance(result, list) and not result:
+                result = None
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "fixtures_laliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "fixtures_laliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return []
+    
     async def get_match_by_id(self, match_id: int) -> Optional[MatchHistorical]:
         cache_key = f"match:{match_id}"
         
@@ -271,6 +439,87 @@ class UnifiedDataService:
         if mock_standings:
             track_fallback_activation("norway_mock_standings")
             return mock_standings
+        
+        return None
+
+    async def get_standings_premier(self) -> Optional[Standings]:
+        cache_key = "standings_premier:current"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "standings_premier", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "standings_premier", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_standings(league_id=settings.PREMIER_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "standings_premier", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "standings_premier", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return None
+
+    async def get_standings_bundesliga(self) -> Optional[Standings]:
+        cache_key = "standings_bundesliga:current"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "standings_bundesliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "standings_bundesliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_standings(league_id=settings.BUNDESLIGA_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "standings_bundesliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "standings_bundesliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
+        
+        return None
+
+    async def get_standings_laliga(self) -> Optional[Standings]:
+        cache_key = "standings_laliga:current"
+        cached_data = await self._get_from_cache(cache_key)
+        if cached_data:
+            monitor_api_call("cache", "standings_laliga", "hit")
+            return cached_data
+        
+        monitor_api_call("cache", "standings_laliga", "miss")
+        
+        try:
+            provider = ApiFootballProvider()
+            result = await provider.get_standings(league_id=settings.LA_LIGA_LEAGUE_ID)
+            if result is not None:
+                await self._set_to_cache(cache_key, result, settings.REDIS_CACHE_TTL_STATIC)
+                monitor_api_call(provider.provider_name, "standings_laliga", "success")
+                return result
+        except Exception as e:
+            monitor_api_call("api_football", "standings_laliga", "error")
+            await self._handle_provider_failure(provider, e)
+        
+        stale_data = await self._get_stale_data(cache_key)
+        if stale_data:
+            track_fallback_activation("stale_cache")
+            return stale_data
         
         return None
 

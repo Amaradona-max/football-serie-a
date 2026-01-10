@@ -5,9 +5,50 @@ from app.data.models.common import PredictionInput, PredictionOutput
 class FootballPredictionModel:
     def __init__(self):
         self.model_version = "v2.0-standings-based"
+        self.home_advantage_bias = 0.08
 
     def train(self, training_data: List[Dict[str, Any]]) -> float:
-        return 1.0
+        if not training_data:
+            return 0.0
+
+        best_bias = self.home_advantage_bias
+        best_accuracy = 0.0
+
+        candidate_biases = [i / 100.0 for i in range(0, 21, 2)]
+
+        for bonus in candidate_biases:
+            self.home_advantage_bias = bonus
+            correct = 0
+            total = 0
+
+            for item in training_data:
+                input_data = item.get("prediction_input")
+                actual_outcome = item.get("actual_outcome")
+                if input_data is None or actual_outcome not in ("H", "D", "A"):
+                    continue
+
+                prediction = self.predict(input_data)
+                probabilities = {
+                    "H": prediction.home_win_prob,
+                    "D": prediction.draw_prob,
+                    "A": prediction.away_win_prob,
+                }
+                predicted_label = max(probabilities.items(), key=lambda x: x[1])[0]
+
+                if predicted_label == actual_outcome:
+                    correct += 1
+                total += 1
+
+            if total == 0:
+                continue
+
+            accuracy = correct / total
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_bias = bonus
+
+        self.home_advantage_bias = best_bias
+        return best_accuracy
 
     def predict(self, input_data: PredictionInput) -> PredictionOutput:
         home_form_strength = self._calculate_form_strength(input_data.home_form)
@@ -18,7 +59,7 @@ class FootballPredictionModel:
         away_position_factor = (max_position - min(input_data.away_position, max_position)) / max_position
 
         base = 0.33
-        home_advantage_bonus = 0.08 if input_data.is_home_advantage else 0.0
+        home_advantage_bonus = self.home_advantage_bias if input_data.is_home_advantage else 0.0
 
         form_diff = home_form_strength - away_form_strength
         position_diff = home_position_factor - away_position_factor

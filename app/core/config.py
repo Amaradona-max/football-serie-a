@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     SERIE_A_LEAGUE_ID: int = 135
     # API-Football Norway Eliteserien league id (può essere configurato via .env)
     NORWAY_LEAGUE_ID: int = 103
+    PREMIER_LEAGUE_ID: int = 39
+    BUNDESLIGA_LEAGUE_ID: int = 78
+    LA_LIGA_LEAGUE_ID: int = 140
     SEASON: int = 2024
     
     # Rate limiting

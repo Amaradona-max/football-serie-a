@@ -126,6 +126,144 @@ async def get_next_matchday_predictions_norway(
         monitor_api_call("api", "next_matchday_predictions_norway", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/matches/next/predictions/premier")
+async def get_next_matchday_predictions_premier(
+    matchday: Optional[int] = Query(None, description="Giornata per le previsioni Premier League"),
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        monitor_api_call("api", "next_matchday_predictions_premier", "request")
+
+        fixtures = await unified_data_service.get_fixtures_premier(matchday)
+        upcoming = [
+            match for match in fixtures
+            if getattr(match, "status", None) in (MatchStatus.SCHEDULED, MatchStatus.LIVE, MatchStatus.IN_PLAY)
+        ]
+
+        result = []
+        for match in upcoming:
+            context = await detailed_stats_service.get_prediction_context(match)
+            prediction = context["prediction"]
+            bio_rhythm_analysis = context["bio_rhythm_analysis"]
+            expected_lineups = context["expected_lineups"]
+
+            result.append(
+                {
+                    "match_id": match.id,
+                    "home_team": getattr(match.home_team, "name", str(match.home_team)),
+                    "away_team": getattr(match.away_team, "name", str(match.away_team)),
+                    "matchday": getattr(match, "matchday", None),
+                    "kickoff": match.utc_date.isoformat() if getattr(match, "utc_date", None) else None,
+                    "prediction": prediction,
+                    "bio_rhythm_analysis": bio_rhythm_analysis,
+                    "expected_lineups": expected_lineups,
+                }
+            )
+
+        result = sorted(
+            result,
+            key=lambda m: (m["matchday"] or 0, m["kickoff"] or ""),
+        )
+
+        monitor_api_call("api", "next_matchday_predictions_premier", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "next_matchday_predictions_premier", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/matches/next/predictions/bundesliga")
+async def get_next_matchday_predictions_bundesliga(
+    matchday: Optional[int] = Query(None, description="Giornata per le previsioni Bundesliga"),
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        monitor_api_call("api", "next_matchday_predictions_bundesliga", "request")
+
+        fixtures = await unified_data_service.get_fixtures_bundesliga(matchday)
+        upcoming = [
+            match for match in fixtures
+            if getattr(match, "status", None) in (MatchStatus.SCHEDULED, MatchStatus.LIVE, MatchStatus.IN_PLAY)
+        ]
+
+        result = []
+        for match in upcoming:
+            context = await detailed_stats_service.get_prediction_context(match)
+            prediction = context["prediction"]
+            bio_rhythm_analysis = context["bio_rhythm_analysis"]
+            expected_lineups = context["expected_lineups"]
+
+            result.append(
+                {
+                    "match_id": match.id,
+                    "home_team": getattr(match.home_team, "name", str(match.home_team)),
+                    "away_team": getattr(match.away_team, "name", str(match.away_team)),
+                    "matchday": getattr(match, "matchday", None),
+                    "kickoff": match.utc_date.isoformat() if getattr(match, "utc_date", None) else None,
+                    "prediction": prediction,
+                    "bio_rhythm_analysis": bio_rhythm_analysis,
+                    "expected_lineups": expected_lineups,
+                }
+            )
+
+        result = sorted(
+            result,
+            key=lambda m: (m["matchday"] or 0, m["kickoff"] or ""),
+        )
+
+        monitor_api_call("api", "next_matchday_predictions_bundesliga", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "next_matchday_predictions_bundesliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/matches/next/predictions/laliga")
+async def get_next_matchday_predictions_laliga(
+    matchday: Optional[int] = Query(None, description="Giornata per le previsioni La Liga"),
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        monitor_api_call("api", "next_matchday_predictions_laliga", "request")
+
+        fixtures = await unified_data_service.get_fixtures_laliga(matchday)
+        upcoming = [
+            match for match in fixtures
+            if getattr(match, "status", None) in (MatchStatus.SCHEDULED, MatchStatus.LIVE, MatchStatus.IN_PLAY)
+        ]
+
+        result = []
+        for match in upcoming:
+            context = await detailed_stats_service.get_prediction_context(match)
+            prediction = context["prediction"]
+            bio_rhythm_analysis = context["bio_rhythm_analysis"]
+            expected_lineups = context["expected_lineups"]
+
+            result.append(
+                {
+                    "match_id": match.id,
+                    "home_team": getattr(match.home_team, "name", str(match.home_team)),
+                    "away_team": getattr(match.away_team, "name", str(match.away_team)),
+                    "matchday": getattr(match, "matchday", None),
+                    "kickoff": match.utc_date.isoformat() if getattr(match, "utc_date", None) else None,
+                    "prediction": prediction,
+                    "bio_rhythm_analysis": bio_rhythm_analysis,
+                    "expected_lineups": expected_lineups,
+                }
+            )
+
+        result = sorted(
+            result,
+            key=lambda m: (m["matchday"] or 0, m["kickoff"] or ""),
+        )
+
+        monitor_api_call("api", "next_matchday_predictions_laliga", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "next_matchday_predictions_laliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/matches/live/cards", response_model=List[LiveMatchCard])
 async def get_live_match_cards(api_key: str = Depends(verify_api_key)):
     """
@@ -158,6 +296,39 @@ async def get_live_match_cards_norway(api_key: str = Depends(verify_api_key)):
         return match_cards
     except Exception as e:
         monitor_api_call("api", "live_match_cards_norway", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/matches/live/cards/premier", response_model=List[LiveMatchCard])
+async def get_live_match_cards_premier(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "live_match_cards_premier", "request")
+        match_cards = await detailed_stats_service.get_live_match_cards_premier()
+        monitor_api_call("api", "live_match_cards_premier", "success")
+        return match_cards
+    except Exception as e:
+        monitor_api_call("api", "live_match_cards_premier", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/matches/live/cards/bundesliga", response_model=List[LiveMatchCard])
+async def get_live_match_cards_bundesliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "live_match_cards_bundesliga", "request")
+        match_cards = await detailed_stats_service.get_live_match_cards_bundesliga()
+        monitor_api_call("api", "live_match_cards_bundesliga", "success")
+        return match_cards
+    except Exception as e:
+        monitor_api_call("api", "live_match_cards_bundesliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/matches/live/cards/laliga", response_model=List[LiveMatchCard])
+async def get_live_match_cards_laliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "live_match_cards_laliga", "request")
+        match_cards = await detailed_stats_service.get_live_match_cards_laliga()
+        monitor_api_call("api", "live_match_cards_laliga", "success")
+        return match_cards
+    except Exception as e:
+        monitor_api_call("api", "live_match_cards_laliga", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/analysis/daily", response_model=DailyAnalysis)

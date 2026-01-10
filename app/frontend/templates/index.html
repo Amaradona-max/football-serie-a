@@ -41,12 +41,21 @@
     <!-- Navigation Buttons -->
     <nav class="bg-white shadow-md">
         <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-start mb-3 space-x-2">
+            <div class="flex flex-wrap justify-start mb-3 space-x-2 space-y-2">
                 <button id="league-seriea-btn" onclick="setLeague('seriea')" class="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm">
                     Serie A
                 </button>
                 <button id="league-norway-btn" onclick="setLeague('norway')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
                     Eliteserien Norvegia
+                </button>
+                <button id="league-premier-btn" onclick="setLeague('premier')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                    Premier League
+                </button>
+                <button id="league-bundesliga-btn" onclick="setLeague('bundesliga')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                    Bundesliga
+                </button>
+                <button id="league-laliga-btn" onclick="setLeague('laliga')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                    La Liga
                 </button>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-9 gap-2">
@@ -302,31 +311,53 @@
             const standingsTitleEl = document.getElementById('standings-title');
             const serieABtn = document.getElementById('league-seriea-btn');
             const norwayBtn = document.getElementById('league-norway-btn');
+            const premierBtn = document.getElementById('league-premier-btn');
+            const bundesligaBtn = document.getElementById('league-bundesliga-btn');
+            const laligaBtn = document.getElementById('league-laliga-btn');
+
+            function resetButton(btn) {
+                if (!btn) return;
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+                btn.classList.remove('bg-blue-900', 'text-white');
+            }
+
+            function activateButton(btn) {
+                if (!btn) return;
+                btn.classList.add('bg-blue-900', 'text-white');
+                btn.classList.remove('bg-gray-200', 'text-gray-700');
+            }
+
+            resetButton(serieABtn);
+            resetButton(norwayBtn);
+            resetButton(premierBtn);
+            resetButton(bundesligaBtn);
+            resetButton(laligaBtn);
 
             if (league === 'seriea') {
                 if (titleEl) titleEl.textContent = 'Serie A 2025/2026';
                 if (subtitleEl) subtitleEl.textContent = 'Previsioni Live e Analisi in Tempo Reale';
                 if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Serie A';
-                if (serieABtn) {
-                    serieABtn.classList.add('bg-blue-900', 'text-white');
-                    serieABtn.classList.remove('bg-gray-200', 'text-gray-700');
-                }
-                if (norwayBtn) {
-                    norwayBtn.classList.add('bg-gray-200', 'text-gray-700');
-                    norwayBtn.classList.remove('bg-blue-900', 'text-white');
-                }
-            } else {
+                activateButton(serieABtn);
+            } else if (league === 'norway') {
                 if (titleEl) titleEl.textContent = 'Eliteserien Norvegese';
                 if (subtitleEl) subtitleEl.textContent = 'Dati live e classifica del campionato norvegese';
                 if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Eliteserien';
-                if (norwayBtn) {
-                    norwayBtn.classList.add('bg-blue-900', 'text-white');
-                    norwayBtn.classList.remove('bg-gray-200', 'text-gray-700');
-                }
-                if (serieABtn) {
-                    serieABtn.classList.add('bg-gray-200', 'text-gray-700');
-                    serieABtn.classList.remove('bg-blue-900', 'text-white');
-                }
+                activateButton(norwayBtn);
+            } else if (league === 'premier') {
+                if (titleEl) titleEl.textContent = 'Premier League';
+                if (subtitleEl) subtitleEl.textContent = 'Dati live, classifica e previsioni Premier League';
+                if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Premier League';
+                activateButton(premierBtn);
+            } else if (league === 'bundesliga') {
+                if (titleEl) titleEl.textContent = 'Bundesliga';
+                if (subtitleEl) subtitleEl.textContent = 'Dati live, classifica e previsioni Bundesliga';
+                if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica Bundesliga';
+                activateButton(bundesligaBtn);
+            } else if (league === 'laliga') {
+                if (titleEl) titleEl.textContent = 'La Liga';
+                if (subtitleEl) subtitleEl.textContent = 'Dati live, classifica e previsioni La Liga';
+                if (standingsTitleEl) standingsTitleEl.textContent = '🏆 Classifica La Liga';
+                activateButton(laligaBtn);
             }
 
             loadSectionData(currentSection);
@@ -338,43 +369,79 @@
                     case 'live-matches':
                         if (currentLeague === 'seriea') {
                             await loadLiveMatches();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadLiveMatchesNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadLiveMatchesPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadLiveMatchesBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadLiveMatchesLaLiga();
                         }
                         break;
                     case 'standings':
                         if (currentLeague === 'seriea') {
                             await loadStandings();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadStandingsNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadStandingsPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadStandingsBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadStandingsLaLiga();
                         }
                         break;
                     case 'scorers':
                         if (currentLeague === 'seriea') {
                             await loadTopScorers();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadTopScorersNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadTopScorersPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadTopScorersBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadTopScorersLaLiga();
                         }
                         break;
                     case 'cards':
                         if (currentLeague === 'seriea') {
                             await loadCardsStats();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadCardsStatsNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadCardsStatsPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadCardsStatsBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadCardsStatsLaLiga();
                         }
                         break;
                     case 'predictions':
                         if (currentLeague === 'seriea') {
                             await loadPredictions();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadPredictionsNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadPredictionsPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadPredictionsBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadPredictionsLaLiga();
                         }
                         break;
                     case 'finished':
                         if (currentLeague === 'seriea') {
                             await loadFinishedMatches();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadFinishedMatchesNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadFinishedMatchesPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadFinishedMatchesBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadFinishedMatchesLaLiga();
                         }
                         break;
                     case 'analysis':
@@ -385,10 +452,31 @@
                                 loadHistory2025Stats(),
                                 loadHistoryProgressStats()
                             ]);
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await Promise.all([
                                 loadModelQuality('norway'),
                                 loadDailyAnalysisNorway(),
+                                loadHistory2025Stats(),
+                                loadHistoryProgressStats()
+                            ]);
+                        } else if (currentLeague === 'premier') {
+                            await Promise.all([
+                                loadModelQuality('premier'),
+                                loadDailyAnalysisPremier(),
+                                loadHistory2025Stats(),
+                                loadHistoryProgressStats()
+                            ]);
+                        } else if (currentLeague === 'bundesliga') {
+                            await Promise.all([
+                                loadModelQuality('bundesliga'),
+                                loadDailyAnalysisBundesliga(),
+                                loadHistory2025Stats(),
+                                loadHistoryProgressStats()
+                            ]);
+                        } else if (currentLeague === 'laliga') {
+                            await Promise.all([
+                                loadModelQuality('laliga'),
+                                loadDailyAnalysisLaLiga(),
                                 loadHistory2025Stats(),
                                 loadHistoryProgressStats()
                             ]);
@@ -397,15 +485,27 @@
                     case 'top-picks':
                         if (currentLeague === 'seriea') {
                             await loadTopPicks();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadTopPicksNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadTopPicksPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadTopPicksBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadTopPicksLaLiga();
                         }
                         break;
                     case 'playable':
                         if (currentLeague === 'seriea') {
                             await loadPlayableMatches();
-                        } else {
+                        } else if (currentLeague === 'norway') {
                             await loadPlayableMatchesNorway();
+                        } else if (currentLeague === 'premier') {
+                            await loadPlayableMatchesPremier();
+                        } else if (currentLeague === 'bundesliga') {
+                            await loadPlayableMatchesBundesliga();
+                        } else if (currentLeague === 'laliga') {
+                            await loadPlayableMatchesLaLiga();
                         }
                         break;
                 }
@@ -753,6 +853,513 @@
             }
         }
 
+        async function loadTopPicksPremier() {
+            const container = document.getElementById('top-picks-container');
+            if (!container) return;
+
+            const matchdayInput = document.getElementById('top-picks-matchday');
+            const matchdayValue = matchdayInput && matchdayInput.value ? matchdayInput.value : null;
+
+            let url = `${API_BASE_URL}/predictions/evaluate/premier`;
+            if (matchdayValue) {
+                url += `?matchday=${encodeURIComponent(matchdayValue)}`;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare Premier League...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara valutata per questa giornata</h3>
+                            <p class="text-gray-600">Seleziona un'altra giornata o attendi che siano disponibili nuove valutazioni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sorted = data.matches.slice().sort((a, b) => {
+                    const accA = typeof a.prediction_success_probability === 'number' ? a.prediction_success_probability : 0;
+                    const accB = typeof b.prediction_success_probability === 'number' ? b.prediction_success_probability : 0;
+                    return accB - accA;
+                });
+
+                const minSuccessThreshold = 70;
+                const maxTopMatches = 6;
+
+                const topMatches = sorted.filter(m => {
+                    const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
+                    return acc >= minSuccessThreshold;
+                }).slice(0, maxTopMatches);
+
+                if (topMatches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
+                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (typeof data.overall_accuracy === 'number') {
+                    const overallPct = Math.round(data.overall_accuracy * 100);
+                    const leagueStats = history2025Stats
+                        ? (history2025Stats.premier || history2025Stats.overall)
+                        : null;
+                    const historyBadge = leagueStats
+                        ? `<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">
+                               Storico 2025 Premier League: ${(leagueStats.accuracy * 100).toFixed(1)}% su ${leagueStats.matches} partite
+                           </span>`
+                        : '';
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità pronostici giornata Premier League</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">${overallPct}% successo complessivo</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Basata su ${data.matches_evaluated || data.matches.length} partite valutate
+                                        ${historyBadge}
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">
+                                        Selezione delle gare con maggiore probabilità storica di pronostico corretto
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const item of topMatches) {
+                    const homeTeam = item.home_team || (item.match && item.match.home_team) || 'Casa';
+                    const awayTeam = item.away_team || (item.match && item.match.away_team) || 'Trasferta';
+                    const matchday = item.matchday || (item.match && item.match.matchday) || data.matchday || '-';
+
+                    const successProb = typeof item.prediction_success_probability === 'number'
+                        ? Math.round(item.prediction_success_probability)
+                        : null;
+
+                    const modelProb = typeof item.predicted_outcome_probability === 'number'
+                        ? Math.round(item.predicted_outcome_probability)
+                        : null;
+
+                    const outcomeLabel = item.predicted_outcome || (item.prediction && item.prediction.label) || '';
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-pink-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-pink-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${matchday}
+                                    </span>
+                                    ${successProb !== null ? `
+                                    <span class="text-sm font-semibold">
+                                        Probabilità successo pronostico: ${successProb}%
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${homeTeam} - ${awayTeam}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Esito suggerito dal modello</h4>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-sm text-gray-700">
+                                        <div class="font-bold text-indigo-700 text-base">${outcomeLabel || 'Esito non disponibile'}</div>
+                                        ${modelProb !== null ? `
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità stimata dal modello: ${modelProb}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    ${item.hit !== undefined ? `
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${item.hit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${item.hit ? 'Pronostico corretto' : 'Pronostico errato'}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Questa gara è stata selezionata perché combina una forte probabilità
+                                    stimata dal modello con una buona affidabilità storica dei pronostici.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading top picks Premier League:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento delle migliori top gare Premier League</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadTopPicksBundesliga() {
+            const container = document.getElementById('top-picks-container');
+            if (!container) return;
+
+            const matchdayInput = document.getElementById('top-picks-matchday');
+            const matchdayValue = matchdayInput && matchdayInput.value ? matchdayInput.value : null;
+
+            let url = `${API_BASE_URL}/predictions/evaluate/bundesliga`;
+            if (matchdayValue) {
+                url += `?matchday=${encodeURIComponent(matchdayValue)}`;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare Bundesliga...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara valutata per questa giornata</h3>
+                            <p class="text-gray-600">Seleziona un'altra giornata o attendi che siano disponibili nuove valutazioni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sorted = data.matches.slice().sort((a, b) => {
+                    const accA = typeof a.prediction_success_probability === 'number' ? a.prediction_success_probability : 0;
+                    const accB = typeof b.prediction_success_probability === 'number' ? b.prediction_success_probability : 0;
+                    return accB - accA;
+                });
+
+                const minSuccessThreshold = 70;
+                const maxTopMatches = 6;
+
+                const topMatches = sorted.filter(m => {
+                    const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
+                    return acc >= minSuccessThreshold;
+                }).slice(0, maxTopMatches);
+
+                if (topMatches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
+                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (typeof data.overall_accuracy === 'number') {
+                    const overallPct = Math.round(data.overall_accuracy * 100);
+                    const leagueStats = history2025Stats
+                        ? (history2025Stats.bundesliga || history2025Stats.overall)
+                        : null;
+                    const historyBadge = leagueStats
+                        ? `<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">
+                               Storico 2025 Bundesliga: ${(leagueStats.accuracy * 100).toFixed(1)}% su ${leagueStats.matches} partite
+                           </span>`
+                        : '';
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità pronostici giornata Bundesliga</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">${overallPct}% successo complessivo</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Basata su ${data.matches_evaluated || data.matches.length} partite valutate
+                                        ${historyBadge}
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">
+                                        Selezione delle gare con maggiore probabilità storica di pronostico corretto
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const item of topMatches) {
+                    const homeTeam = item.home_team || (item.match && item.match.home_team) || 'Casa';
+                    const awayTeam = item.away_team || (item.match && item.match.away_team) || 'Trasferta';
+                    const matchday = item.matchday || (item.match && item.match.matchday) || data.matchday || '-';
+
+                    const successProb = typeof item.prediction_success_probability === 'number'
+                        ? Math.round(item.prediction_success_probability)
+                        : null;
+
+                    const modelProb = typeof item.predicted_outcome_probability === 'number'
+                        ? Math.round(item.predicted_outcome_probability)
+                        : null;
+
+                    const outcomeLabel = item.predicted_outcome || (item.prediction && item.prediction.label) || '';
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-pink-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-pink-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${matchday}
+                                    </span>
+                                    ${successProb !== null ? `
+                                    <span class="text-sm font-semibold">
+                                        Probabilità successo pronostico: ${successProb}%
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${homeTeam} - ${awayTeam}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Esito suggerito dal modello</h4>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-sm text-gray-700">
+                                        <div class="font-bold text-indigo-700 text-base">${outcomeLabel || 'Esito non disponibile'}</div>
+                                        ${modelProb !== null ? `
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità stimata dal modello: ${modelProb}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    ${item.hit !== undefined ? `
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${item.hit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${item.hit ? 'Pronostico corretto' : 'Pronostico errato'}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Questa gara è stata selezionata perché combina una forte probabilità
+                                    stimata dal modello con una buona affidabilità storica dei pronostici.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading top picks Bundesliga:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento delle migliori top gare Bundesliga</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadTopPicksLaLiga() {
+            const container = document.getElementById('top-picks-container');
+            if (!container) return;
+
+            const matchdayInput = document.getElementById('top-picks-matchday');
+            const matchdayValue = matchdayInput && matchdayInput.value ? matchdayInput.value : null;
+
+            let url = `${API_BASE_URL}/predictions/evaluate/laliga`;
+            if (matchdayValue) {
+                url += `?matchday=${encodeURIComponent(matchdayValue)}`;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare La Liga...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara valutata per questa giornata</h3>
+                            <p class="text-gray-600">Seleziona un'altra giornata o attendi che siano disponibili nuove valutazioni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sorted = data.matches.slice().sort((a, b) => {
+                    const accA = typeof a.prediction_success_probability === 'number' ? a.prediction_success_probability : 0;
+                    const accB = typeof b.prediction_success_probability === 'number' ? b.prediction_success_probability : 0;
+                    return accB - accA;
+                });
+
+                const minSuccessThreshold = 70;
+                const maxTopMatches = 6;
+
+                const topMatches = sorted.filter(m => {
+                    const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
+                    return acc >= minSuccessThreshold;
+                }).slice(0, maxTopMatches);
+
+                if (topMatches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
+                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (typeof data.overall_accuracy === 'number') {
+                    const overallPct = Math.round(data.overall_accuracy * 100);
+                    const leagueStats = history2025Stats
+                        ? (history2025Stats.laliga || history2025Stats.overall)
+                        : null;
+                    const historyBadge = leagueStats
+                        ? `<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">
+                               Storico 2025 La Liga: ${(leagueStats.accuracy * 100).toFixed(1)}% su ${leagueStats.matches} partite
+                           </span>`
+                        : '';
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità pronostici giornata La Liga</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">${overallPct}% successo complessivo</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Basata su ${data.matches_evaluated || data.matches.length} partite valutate
+                                        ${historyBadge}
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">
+                                        Selezione delle gare con maggiore probabilità storica di pronostico corretto
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const item of topMatches) {
+                    const homeTeam = item.home_team || (item.match && item.match.home_team) || 'Casa';
+                    const awayTeam = item.away_team || (item.match && item.match.away_team) || 'Trasferta';
+                    const matchday = item.matchday || (item.match && item.match.matchday) || data.matchday || '-';
+
+                    const successProb = typeof item.prediction_success_probability === 'number'
+                        ? Math.round(item.prediction_success_probability)
+                        : null;
+
+                    const modelProb = typeof item.predicted_outcome_probability === 'number'
+                        ? Math.round(item.predicted_outcome_probability)
+                        : null;
+
+                    const outcomeLabel = item.predicted_outcome || (item.prediction && item.prediction.label) || '';
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-pink-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-pink-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${matchday}
+                                    </span>
+                                    ${successProb !== null ? `
+                                    <span class="text-sm font-semibold">
+                                        Probabilità successo pronostico: ${successProb}%
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${homeTeam} - ${awayTeam}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Esito suggerito dal modello</h4>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-sm text-gray-700">
+                                        <div class="font-bold text-indigo-700 text-base">${outcomeLabel || 'Esito non disponibile'}</div>
+                                        ${modelProb !== null ? `
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità stimata dal modello: ${modelProb}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    ${item.hit !== undefined ? `
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${item.hit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${item.hit ? 'Pronostico corretto' : 'Pronostico errato'}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Questa gara è stata selezionata perché combina una forte probabilità
+                                    stimata dal modello con una buona affidabilità storica dei pronostici.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading top picks La Liga:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento delle migliori top gare La Liga</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
         async function renderPlayableMatchesForLeague(predictionsUrl, reliabilityUrl, leagueLabel, headerTitle) {
             const container = document.getElementById('playable-container');
             if (!container) return;
@@ -844,12 +1451,26 @@
                 const blocks = [];
 
                 if (modelAccuracyPct !== null) {
-                    const leagueStats = history2025Stats
-                        ? (history2025Stats.seriea || history2025Stats.overall)
-                        : null;
+                    let leagueStats = null;
+                    if (history2025Stats) {
+                        if (leagueLabel === 'Serie A') {
+                            leagueStats = history2025Stats.seriea || history2025Stats.overall;
+                        } else if (leagueLabel === 'Eliteserien') {
+                            leagueStats = history2025Stats.norway || history2025Stats.overall;
+                        } else if (leagueLabel === 'Premier League') {
+                            leagueStats = history2025Stats.premier || history2025Stats.overall;
+                        } else if (leagueLabel === 'Bundesliga') {
+                            leagueStats = history2025Stats.bundesliga || history2025Stats.overall;
+                        } else if (leagueLabel === 'La Liga') {
+                            leagueStats = history2025Stats.laliga || history2025Stats.overall;
+                        } else {
+                            leagueStats = history2025Stats.overall;
+                        }
+                    }
+
                     const historyBadge = leagueStats
                         ? `<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">
-                               Storico 2025 Serie A: ${(leagueStats.accuracy * 100).toFixed(1)}% su ${leagueStats.matches} partite
+                               Storico 2025 ${leagueLabel}: ${(leagueStats.accuracy * 100).toFixed(1)}% su ${leagueStats.matches} partite
                            </span>`
                         : '';
                     blocks.push(`
@@ -988,6 +1609,33 @@
             );
         }
 
+        async function loadPlayableMatchesPremier() {
+            await renderPlayableMatchesForLeague(
+                `${API_BASE_URL}/detailed/matches/next/predictions/premier`,
+                `${API_BASE_URL}/predictions/reliability/premier?last_n_matchdays=18`,
+                'Premier League',
+                'Campione top Premier League'
+            );
+        }
+
+        async function loadPlayableMatchesBundesliga() {
+            await renderPlayableMatchesForLeague(
+                `${API_BASE_URL}/detailed/matches/next/predictions/bundesliga`,
+                `${API_BASE_URL}/predictions/reliability/bundesliga?last_n_matchdays=18`,
+                'Bundesliga',
+                'Campione top Bundesliga'
+            );
+        }
+
+        async function loadPlayableMatchesLaLiga() {
+            await renderPlayableMatchesForLeague(
+                `${API_BASE_URL}/detailed/matches/next/predictions/laliga`,
+                `${API_BASE_URL}/predictions/reliability/laliga?last_n_matchdays=18`,
+                'La Liga',
+                'Campione top La Liga'
+            );
+        }
+
         async function loadModelQuality(league) {
             const container = document.getElementById('model-quality-container');
             if (!container) return;
@@ -1096,11 +1744,35 @@
                     }
                     : null;
 
-                history2025Stats = overallStats || serieAData || norwayData
+                const premierData = data && data.premier && typeof data.premier.matches_2025 === 'number' && data.premier.matches_2025 > 0
+                    ? {
+                        matches: data.premier.matches_2025,
+                        accuracy: typeof data.premier.accuracy_2025 === 'number' ? data.premier.accuracy_2025 : 0
+                    }
+                    : null;
+
+                const bundesligaData = data && data.bundesliga && typeof data.bundesliga.matches_2025 === 'number' && data.bundesliga.matches_2025 > 0
+                    ? {
+                        matches: data.bundesliga.matches_2025,
+                        accuracy: typeof data.bundesliga.accuracy_2025 === 'number' ? data.bundesliga.accuracy_2025 : 0
+                    }
+                    : null;
+
+                const laligaData = data && data.laliga && typeof data.laliga.matches_2025 === 'number' && data.laliga.matches_2025 > 0
+                    ? {
+                        matches: data.laliga.matches_2025,
+                        accuracy: typeof data.laliga.accuracy_2025 === 'number' ? data.laliga.accuracy_2025 : 0
+                    }
+                    : null;
+
+                history2025Stats = overallStats || serieAData || norwayData || premierData || bundesligaData || laligaData
                     ? {
                         overall: overallStats,
                         seriea: serieAData,
-                        norway: norwayData
+                        norway: norwayData,
+                        premier: premierData,
+                        bundesliga: bundesligaData,
+                        laliga: laligaData
                     }
                     : null;
 
@@ -1117,6 +1789,9 @@
                 const overall = history2025Stats.overall;
                 const seriea = history2025Stats.seriea;
                 const norway = history2025Stats.norway;
+                const premier = history2025Stats.premier;
+                const bundesliga = history2025Stats.bundesliga;
+                const laliga = history2025Stats.laliga;
 
                 const overallLine = overall ? `
                     <div class="flex justify-between">
@@ -1143,6 +1818,27 @@
                     </div>
                 ` : '';
 
+                const premierLine = premier ? `
+                    <div class="flex justify-between">
+                        <span>Premier League (partite agosto-dicembre 2025):</span>
+                        <span class="font-bold">${premier.matches} – ${(premier.accuracy * 100).toFixed(1)}%</span>
+                    </div>
+                ` : '';
+
+                const bundesligaLine = bundesliga ? `
+                    <div class="flex justify-between">
+                        <span>Bundesliga (partite agosto-dicembre 2025):</span>
+                        <span class="font-bold">${bundesliga.matches} – ${(bundesliga.accuracy * 100).toFixed(1)}%</span>
+                    </div>
+                ` : '';
+
+                const laligaLine = laliga ? `
+                    <div class="flex justify-between">
+                        <span>La Liga (partite agosto-dicembre 2025):</span>
+                        <span class="font-bold">${laliga.matches} – ${(laliga.accuracy * 100).toFixed(1)}%</span>
+                    </div>
+                ` : '';
+
                 container.innerHTML = `
                     <div class="bg-white rounded-lg shadow p-4 h-full">
                         <h3 class="font-semibold text-gray-700 mb-2">📅 Storico 2025</h3>
@@ -1150,9 +1846,12 @@
                             ${overallLine}
                             ${serieaLine}
                             ${norwayLine}
+                            ${premierLine}
+                            ${bundesligaLine}
+                            ${laligaLine}
                         </div>
                         <p class="text-xs text-gray-400 mt-3">
-                            Dati agosto–dicembre 2025, separati per Serie A ed Eliteserien quando disponibili.
+                            Dati agosto–dicembre 2025, separati per campionato quando disponibili.
                         </p>
                     </div>
                 `;
@@ -1443,6 +2142,114 @@
                                 </div>
                             </div>
                         `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadLiveMatchesPremier() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/live/cards/premier`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('live-matches-container');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in corso in Premier League</h3>
+                        <p class="text-gray-600">Torna più tardi per le partite live</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                ${match.minute ? `${match.minute}'` : match.status}
+                            </span>
+                            <span class="text-sm">${match.score || 'VS'}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadLiveMatchesBundesliga() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/live/cards/bundesliga`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('live-matches-container');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in corso in Bundesliga</h3>
+                        <p class="text-gray-600">Torna più tardi per le partite live</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                ${match.minute ? `${match.minute}'` : match.status}
+                            </span>
+                            <span class="text-sm">${match.score || 'VS'}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadLiveMatchesLaLiga() {
+            const response = await fetch(`${API_BASE_URL}/detailed/matches/live/cards/laliga`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('live-matches-container');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in corso in La Liga</h3>
+                        <p class="text-gray-600">Torna più tardi per le partite live</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(match => `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                ${match.minute ? `${match.minute}'` : match.status}
+                            </span>
+                            <span class="text-sm">${match.score || 'VS'}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
                     </div>
                 </div>
             `).join('');
@@ -1833,6 +2640,201 @@
             lastHighlightedIdsNorway = highlightedIds;
 
             renderPredictionsGrid(data, reliability, highlightedIds, 'Eliteserien');
+        }
+
+        async function loadPredictionsPremier() {
+            const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/detailed/matches/next/predictions/premier`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }),
+                fetch(`${API_BASE_URL}/predictions/reliability/seriea?last_n_matchdays=18`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }).catch(() => null)
+            ]);
+
+            const data = await predictionsResponse.json();
+            let reliability = null;
+            if (reliabilityResponse && reliabilityResponse.ok) {
+                try {
+                    reliability = await reliabilityResponse.json();
+                } catch (e) {
+                    reliability = null;
+                }
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                renderPredictionsGrid([], reliability, new Set(), 'Premier League');
+                return;
+            }
+
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
+                }
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
+
+            const sortedByProb = data.map(match => {
+                const p = match.prediction;
+                const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                return { match_id: match.match_id, maxProb };
+            }).sort((a, b) => b.maxProb - a.maxProb);
+
+            const highlightedIds = new Set();
+            const maxTopPicks = 3;
+            const minProbForTopPick = 60;
+            const minAccuracyForTopPick = 55;
+
+            for (let i = 0; i < Math.min(maxTopPicks, sortedByProb.length); i++) {
+                const item = sortedByProb[i];
+                const passesProb = item.maxProb >= minProbForTopPick;
+                const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                if (passesProb && passesAccuracy) {
+                    highlightedIds.add(item.match_id);
+                }
+            }
+
+            renderPredictionsGrid(data, reliability, highlightedIds, 'Premier League');
+        }
+
+        async function loadPredictionsBundesliga() {
+            const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/detailed/matches/next/predictions/bundesliga`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }),
+                fetch(`${API_BASE_URL}/predictions/reliability/seriea?last_n_matchdays=18`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }).catch(() => null)
+            ]);
+
+            const data = await predictionsResponse.json();
+            let reliability = null;
+            if (reliabilityResponse && reliabilityResponse.ok) {
+                try {
+                    reliability = await reliabilityResponse.json();
+                } catch (e) {
+                    reliability = null;
+                }
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                renderPredictionsGrid([], reliability, new Set(), 'Bundesliga');
+                return;
+            }
+
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
+                }
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
+
+            const sortedByProb = data.map(match => {
+                const p = match.prediction;
+                const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                return { match_id: match.match_id, maxProb };
+            }).sort((a, b) => b.maxProb - a.maxProb);
+
+            const highlightedIds = new Set();
+            const maxTopPicks = 3;
+            const minProbForTopPick = 60;
+            const minAccuracyForTopPick = 55;
+
+            for (let i = 0; i < Math.min(maxTopPicks, sortedByProb.length); i++) {
+                const item = sortedByProb[i];
+                const passesProb = item.maxProb >= minProbForTopPick;
+                const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                if (passesProb && passesAccuracy) {
+                    highlightedIds.add(item.match_id);
+                }
+            }
+
+            renderPredictionsGrid(data, reliability, highlightedIds, 'Bundesliga');
+        }
+
+        async function loadPredictionsLaLiga() {
+            const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/detailed/matches/next/predictions/laliga`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }),
+                fetch(`${API_BASE_URL}/predictions/reliability/seriea?last_n_matchdays=18`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }).catch(() => null)
+            ]);
+
+            const data = await predictionsResponse.json();
+            let reliability = null;
+            if (reliabilityResponse && reliabilityResponse.ok) {
+                try {
+                    reliability = await reliabilityResponse.json();
+                } catch (e) {
+                    reliability = null;
+                }
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                renderPredictionsGrid([], reliability, new Set(), 'La Liga');
+                return;
+            }
+
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
+                }
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
+
+            const sortedByProb = data.map(match => {
+                const p = match.prediction;
+                const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                return { match_id: match.match_id, maxProb };
+            }).sort((a, b) => b.maxProb - a.maxProb);
+
+            const highlightedIds = new Set();
+            const maxTopPicks = 3;
+            const minProbForTopPick = 60;
+            const minAccuracyForTopPick = 55;
+
+            for (let i = 0; i < Math.min(maxTopPicks, sortedByProb.length); i++) {
+                const item = sortedByProb[i];
+                const passesProb = item.maxProb >= minProbForTopPick;
+                const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                if (passesProb && passesAccuracy) {
+                    highlightedIds.add(item.match_id);
+                }
+            }
+
+            renderPredictionsGrid(data, reliability, highlightedIds, 'La Liga');
         }
 
         // Helper function for rhythm color

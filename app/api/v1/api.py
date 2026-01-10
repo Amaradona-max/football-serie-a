@@ -37,6 +37,39 @@ async def get_live_fixtures_norway(api_key: str = Depends(verify_api_key)):
         monitor_api_call("api", "fixtures_live_norway", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/premier/fixtures/live", response_model=List[MatchLive])
+async def get_live_fixtures_premier(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "fixtures_live_premier", "request")
+        matches = await unified_data_service.get_live_matches_premier()
+        monitor_api_call("api", "fixtures_live_premier", "success")
+        return matches
+    except Exception as e:
+        monitor_api_call("api", "fixtures_live_premier", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/bundesliga/fixtures/live", response_model=List[MatchLive])
+async def get_live_fixtures_bundesliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "fixtures_live_bundesliga", "request")
+        matches = await unified_data_service.get_live_matches_bundesliga()
+        monitor_api_call("api", "fixtures_live_bundesliga", "success")
+        return matches
+    except Exception as e:
+        monitor_api_call("api", "fixtures_live_bundesliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/laliga/fixtures/live", response_model=List[MatchLive])
+async def get_live_fixtures_laliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "fixtures_live_laliga", "request")
+        matches = await unified_data_service.get_live_matches_laliga()
+        monitor_api_call("api", "fixtures_live_laliga", "success")
+        return matches
+    except Exception as e:
+        monitor_api_call("api", "fixtures_live_laliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/fixtures/{match_id}", response_model=MatchHistorical)
 async def get_fixture_by_id(
     match_id: int, 
@@ -94,6 +127,51 @@ async def get_standings_norway(api_key: str = Depends(verify_api_key)):
         raise
     except Exception as e:
         monitor_api_call("api", "standings_norway", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/premier/standings", response_model=Standings)
+async def get_standings_premier(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "standings_premier", "request")
+        standings = await unified_data_service.get_standings_premier()
+        if not standings:
+            raise HTTPException(status_code=404, detail="Standings not available")
+        monitor_api_call("api", "standings_premier", "success")
+        return standings
+    except HTTPException:
+        raise
+    except Exception as e:
+        monitor_api_call("api", "standings_premier", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/bundesliga/standings", response_model=Standings)
+async def get_standings_bundesliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "standings_bundesliga", "request")
+        standings = await unified_data_service.get_standings_bundesliga()
+        if not standings:
+            raise HTTPException(status_code=404, detail="Standings not available")
+        monitor_api_call("api", "standings_bundesliga", "success")
+        return standings
+    except HTTPException:
+        raise
+    except Exception as e:
+        monitor_api_call("api", "standings_bundesliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/laliga/standings", response_model=Standings)
+async def get_standings_laliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "standings_laliga", "request")
+        standings = await unified_data_service.get_standings_laliga()
+        if not standings:
+            raise HTTPException(status_code=404, detail="Standings not available")
+        monitor_api_call("api", "standings_laliga", "success")
+        return standings
+    except HTTPException:
+        raise
+    except Exception as e:
+        monitor_api_call("api", "standings_laliga", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/health")
@@ -160,6 +238,42 @@ async def get_next_matchday_predictions_norway(api_key: str = Depends(verify_api
         monitor_api_call("api", "norway_predictions", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/premier/predictions/next-matchday")
+async def get_next_matchday_predictions_premier(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "premier_predictions", "request")
+        from app.ml.service import prediction_service
+        predictions = await prediction_service.predict_next_matchday_premier()
+        monitor_api_call("api", "premier_predictions", "success")
+        return predictions
+    except Exception as e:
+        monitor_api_call("api", "premier_predictions", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/bundesliga/predictions/next-matchday")
+async def get_next_matchday_predictions_bundesliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "bundesliga_predictions", "request")
+        from app.ml.service import prediction_service
+        predictions = await prediction_service.predict_next_matchday_bundesliga()
+        monitor_api_call("api", "bundesliga_predictions", "success")
+        return predictions
+    except Exception as e:
+        monitor_api_call("api", "bundesliga_predictions", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/laliga/predictions/next-matchday")
+async def get_next_matchday_predictions_laliga(api_key: str = Depends(verify_api_key)):
+    try:
+        monitor_api_call("api", "laliga_predictions", "request")
+        from app.ml.service import prediction_service
+        predictions = await prediction_service.predict_next_matchday_laliga()
+        monitor_api_call("api", "laliga_predictions", "success")
+        return predictions
+    except Exception as e:
+        monitor_api_call("api", "laliga_predictions", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/predictions/evaluate/seriea")
 async def evaluate_predictions_seriea(
     matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
@@ -190,6 +304,51 @@ async def evaluate_predictions_norway(
         monitor_api_call("api", "norway_predictions_evaluate", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/predictions/evaluate/premier")
+async def evaluate_predictions_premier(
+    matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "premier_predictions_evaluate", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_predictions_premier(matchday)
+        monitor_api_call("api", "premier_predictions_evaluate", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "premier_predictions_evaluate", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/evaluate/bundesliga")
+async def evaluate_predictions_bundesliga(
+    matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "bundesliga_predictions_evaluate", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_predictions_bundesliga(matchday)
+        monitor_api_call("api", "bundesliga_predictions_evaluate", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "bundesliga_predictions_evaluate", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/evaluate/laliga")
+async def evaluate_predictions_laliga(
+    matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "laliga_predictions_evaluate", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_predictions_laliga(matchday)
+        monitor_api_call("api", "laliga_predictions_evaluate", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "laliga_predictions_evaluate", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/predictions/reliability/seriea")
 async def get_reliability_seriea(
     last_n_matchdays: int = Query(18, ge=1, le=38, description="Numero di giornate recenti da considerare"),
@@ -218,6 +377,51 @@ async def get_reliability_norway(
         return result
     except Exception as e:
         monitor_api_call("api", "norway_predictions_reliability", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/reliability/premier")
+async def get_reliability_premier(
+    last_n_matchdays: int = Query(18, ge=1, le=38, description="Numero di giornate recenti da considerare"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_reliability_premier", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_recent_matchdays_premier(last_n_matchdays)
+        monitor_api_call("api", "predictions_reliability_premier", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_reliability_premier", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/reliability/bundesliga")
+async def get_reliability_bundesliga(
+    last_n_matchdays: int = Query(18, ge=1, le=34, description="Numero di giornate recenti da considerare"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_reliability_bundesliga", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_recent_matchdays_bundesliga(last_n_matchdays)
+        monitor_api_call("api", "predictions_reliability_bundesliga", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_reliability_bundesliga", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/reliability/laliga")
+async def get_reliability_laliga(
+    last_n_matchdays: int = Query(18, ge=1, le=38, description="Numero di giornate recenti da considerare"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_reliability_laliga", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_recent_matchdays_laliga(last_n_matchdays)
+        monitor_api_call("api", "predictions_reliability_laliga", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_reliability_laliga", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/predictions/history/2025")

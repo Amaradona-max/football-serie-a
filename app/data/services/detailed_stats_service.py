@@ -722,6 +722,51 @@ class DetailedStatsService:
             logger.error(f"Error getting live match cards for Norway: {e}")
             raise
     
+    async def get_live_match_cards_premier(self) -> List[LiveMatchCard]:
+        try:
+            matches: List[MatchLive] = await unified_data_service.get_live_matches_premier()
+            if not matches:
+                return []
+
+            match_cards: List[LiveMatchCard] = []
+            for match in matches:
+                match_cards.append(await self._create_match_card(match))
+
+            return match_cards
+        except Exception as e:
+            logger.error(f"Error getting live match cards for Premier League: {e}")
+            raise
+
+    async def get_live_match_cards_bundesliga(self) -> List[LiveMatchCard]:
+        try:
+            matches: List[MatchLive] = await unified_data_service.get_live_matches_bundesliga()
+            if not matches:
+                return []
+
+            match_cards: List[LiveMatchCard] = []
+            for match in matches:
+                match_cards.append(await self._create_match_card(match))
+
+            return match_cards
+        except Exception as e:
+            logger.error(f"Error getting live match cards for Bundesliga: {e}")
+            raise
+
+    async def get_live_match_cards_laliga(self) -> List[LiveMatchCard]:
+        try:
+            matches: List[MatchLive] = await unified_data_service.get_live_matches_laliga()
+            if not matches:
+                return []
+
+            match_cards: List[LiveMatchCard] = []
+            for match in matches:
+                match_cards.append(await self._create_match_card(match))
+
+            return match_cards
+        except Exception as e:
+            logger.error(f"Error getting live match cards for La Liga: {e}")
+            raise
+    
     async def _generate_prediction(self, match: Any) -> Any:
         from app.data.models.detailed import MatchPredictionDetailed, ExpectedGoals
 
@@ -929,28 +974,75 @@ class DetailedStatsService:
                     away_stats = ts
 
         if not home_stats or not away_stats:
-            home_prob = 45.0
-            draw_prob = 30.0
-            away_prob = 25.0
+            try:
+                from app.ml.service import prediction_service
 
-            def fair_odds(pct: float) -> Optional[float]:
-                if pct <= 0:
-                    return None
-                return round(100.0 / pct, 2)
+                ml_prediction = await prediction_service.predict_single_match(match.id)
 
-            return MatchPredictionDetailed(
-                match_id=match.id,
-                home_win_prob=home_prob,
-                draw_prob=draw_prob,
-                away_win_prob=away_prob,
-                expected_goals=ExpectedGoals(home=1.8, away=1.2, total=3.0),
-                both_teams_to_score_prob=65.0,
-                over_under_25_prob=70.0,
-                most_likely_scoreline="2-1",
-                home_fair_odds=fair_odds(home_prob),
-                draw_fair_odds=fair_odds(draw_prob),
-                away_fair_odds=fair_odds(away_prob),
-            )
+                home_prob = round(ml_prediction.home_win_prob * 100.0, 1)
+                draw_prob = round(ml_prediction.draw_prob * 100.0, 1)
+                away_prob = round(ml_prediction.away_win_prob * 100.0, 1)
+
+                predicted_score = ml_prediction.predicted_score or {}
+                home_goals_pred = predicted_score.get("home", 1) or 1
+                away_goals_pred = predicted_score.get("away", 1) or 1
+
+                expected_home_goals = float(home_goals_pred)
+                expected_away_goals = float(away_goals_pred)
+                total_expected_goals = expected_home_goals + expected_away_goals
+
+                base_btts = 40.0
+                btts_adjust = max(
+                    0.0,
+                    min(
+                        35.0,
+                        (expected_home_goals + expected_away_goals - 2.0) * 25.0,
+                    ),
+                )
+                both_teams_to_score_prob = round(
+                    max(20.0, min(90.0, base_btts + btts_adjust)), 1
+                )
+
+                base_over25 = 45.0
+                over25_adjust = max(
+                    -20.0,
+                    min(35.0, (total_expected_goals - 2.5) * 30.0),
+                )
+                over_under_25_prob = round(
+                    max(15.0, min(95.0, base_over25 + over25_adjust)), 1
+                )
+
+                home_goals_rounded = int(round(expected_home_goals))
+                away_goals_rounded = int(round(expected_away_goals))
+                if home_goals_rounded == 0 and away_goals_rounded == 0:
+                    home_goals_rounded = 1
+
+                most_likely_scoreline = f"{home_goals_rounded}-{away_goals_rounded}"
+
+                def fair_odds(pct: float) -> Optional[float]:
+                    if pct <= 0:
+                        return None
+                    return round(100.0 / pct, 2)
+
+                return MatchPredictionDetailed(
+                    match_id=match.id,
+                    home_win_prob=home_prob,
+                    draw_prob=draw_prob,
+                    away_win_prob=away_prob,
+                    expected_goals=ExpectedGoals(
+                        home=round(expected_home_goals, 2),
+                        away=round(expected_away_goals, 2),
+                        total=round(total_expected_goals, 2),
+                    ),
+                    both_teams_to_score_prob=both_teams_to_score_prob,
+                    over_under_25_prob=over_under_25_prob,
+                    most_likely_scoreline=most_likely_scoreline,
+                    home_fair_odds=fair_odds(home_prob),
+                    draw_fair_odds=fair_odds(draw_prob),
+                    away_fair_odds=fair_odds(away_prob),
+                )
+            except Exception as e:
+                logger.error(f"Error generating ML-based fallback prediction: {e}")
 
         def compute_rating(ts) -> float:
             played = max(ts.played, 1)
@@ -1368,6 +1460,324 @@ class DetailedStatsService:
         away_win_percentage = round((away_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
         draw_percentage = round((draws / total_matches) * 100, 1) if total_matches > 0 else 0.0
 
+        return DailyAnalysis(
+            date=analysis_date,
+            total_matches=total_matches,
+            total_goals=total_goals,
+            average_goals_per_match=average_goals_per_match,
+            home_goals=home_goals,
+            away_goals=away_goals,
+            total_cards=0,
+            average_cards_per_match=0.0,
+            home_wins=home_wins,
+            away_wins=away_wins,
+            draws=draws,
+            home_win_percentage=home_win_percentage,
+            away_win_percentage=away_win_percentage,
+            draw_percentage=draw_percentage,
+            matches_over_25_goals=matches_over_25_goals,
+            matches_both_teams_score=matches_both_teams_score,
+            clean_sheets=clean_sheets,
+            matches_with_red_card=0,
+            most_productive_match=most_productive_match,
+            most_disciplined_match=None,
+            biggest_win=biggest_win,
+        )
+
+    async def _generate_daily_analysis_premier(self, analysis_date: date) -> DailyAnalysis:
+        fixtures = await unified_data_service.get_fixtures_premier()
+        matches_for_day = []
+        for match in fixtures:
+            match_date = getattr(match, "utc_date", None)
+            if match_date and match_date.date() == analysis_date:
+                matches_for_day.append(match)
+        total_matches = len(matches_for_day)
+        if total_matches == 0:
+            return DailyAnalysis(
+                date=analysis_date,
+                total_matches=0,
+                total_goals=0,
+                average_goals_per_match=0.0,
+                home_goals=0,
+                away_goals=0,
+                total_cards=0,
+                average_cards_per_match=0.0,
+                home_wins=0,
+                away_wins=0,
+                draws=0,
+                home_win_percentage=0.0,
+                away_win_percentage=0.0,
+                draw_percentage=0.0,
+                matches_over_25_goals=0,
+                matches_both_teams_score=0,
+                clean_sheets=0,
+                matches_with_red_card=0,
+                most_productive_match=None,
+                most_disciplined_match=None,
+                biggest_win=None,
+            )
+        total_goals = 0
+        home_goals = 0
+        away_goals = 0
+        home_wins = 0
+        away_wins = 0
+        draws = 0
+        matches_over_25_goals = 0
+        matches_both_teams_score = 0
+        clean_sheets = 0
+        most_productive_match = None
+        most_productive_goals = -1
+        biggest_win = None
+        biggest_win_margin = -1
+        for match in matches_for_day:
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+            home_goals_match = 0
+            away_goals_match = 0
+            if isinstance(full_time, dict):
+                home_goals_match = int(full_time.get("home") or 0)
+                away_goals_match = int(full_time.get("away") or 0)
+            home_goals += home_goals_match
+            away_goals += away_goals_match
+            goals_in_match = home_goals_match + away_goals_match
+            total_goals += goals_in_match
+            home_name = getattr(match.home_team, "name", str(match.home_team))
+            away_name = getattr(match.away_team, "name", str(match.away_team))
+            if home_goals_match > away_goals_match:
+                home_wins += 1
+            elif away_goals_match > home_goals_match:
+                away_wins += 1
+            else:
+                draws += 1
+            if goals_in_match > most_productive_goals:
+                most_productive_goals = goals_in_match
+                most_productive_match = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            margin = abs(home_goals_match - away_goals_match)
+            if margin > biggest_win_margin and goals_in_match > 0:
+                biggest_win_margin = margin
+                biggest_win = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            if goals_in_match > 2.5:
+                matches_over_25_goals += 1
+            if home_goals_match > 0 and away_goals_match > 0:
+                matches_both_teams_score += 1
+            if home_goals_match == 0 or away_goals_match == 0:
+                clean_sheets += 1
+        average_goals_per_match = round(total_goals / total_matches, 2)
+        home_win_percentage = round((home_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        away_win_percentage = round((away_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        draw_percentage = round((draws / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        return DailyAnalysis(
+            date=analysis_date,
+            total_matches=total_matches,
+            total_goals=total_goals,
+            average_goals_per_match=average_goals_per_match,
+            home_goals=home_goals,
+            away_goals=away_goals,
+            total_cards=0,
+            average_cards_per_match=0.0,
+            home_wins=home_wins,
+            away_wins=away_wins,
+            draws=draws,
+            home_win_percentage=home_win_percentage,
+            away_win_percentage=away_win_percentage,
+            draw_percentage=draw_percentage,
+            matches_over_25_goals=matches_over_25_goals,
+            matches_both_teams_score=matches_both_teams_score,
+            clean_sheets=clean_sheets,
+            matches_with_red_card=0,
+            most_productive_match=most_productive_match,
+            most_disciplined_match=None,
+            biggest_win=biggest_win,
+        )
+
+    async def _generate_daily_analysis_bundesliga(self, analysis_date: date) -> DailyAnalysis:
+        fixtures = await unified_data_service.get_fixtures_bundesliga()
+        matches_for_day = []
+        for match in fixtures:
+            match_date = getattr(match, "utc_date", None)
+            if match_date and match_date.date() == analysis_date:
+                matches_for_day.append(match)
+        total_matches = len(matches_for_day)
+        if total_matches == 0:
+            return DailyAnalysis(
+                date=analysis_date,
+                total_matches=0,
+                total_goals=0,
+                average_goals_per_match=0.0,
+                home_goals=0,
+                away_goals=0,
+                total_cards=0,
+                average_cards_per_match=0.0,
+                home_wins=0,
+                away_wins=0,
+                draws=0,
+                home_win_percentage=0.0,
+                away_win_percentage=0.0,
+                draw_percentage=0.0,
+                matches_over_25_goals=0,
+                matches_both_teams_score=0,
+                clean_sheets=0,
+                matches_with_red_card=0,
+                most_productive_match=None,
+                most_disciplined_match=None,
+                biggest_win=None,
+            )
+        total_goals = 0
+        home_goals = 0
+        away_goals = 0
+        home_wins = 0
+        away_wins = 0
+        draws = 0
+        matches_over_25_goals = 0
+        matches_both_teams_score = 0
+        clean_sheets = 0
+        most_productive_match = None
+        most_productive_goals = -1
+        biggest_win = None
+        biggest_win_margin = -1
+        for match in matches_for_day:
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+            home_goals_match = 0
+            away_goals_match = 0
+            if isinstance(full_time, dict):
+                home_goals_match = int(full_time.get("home") or 0)
+                away_goals_match = int(full_time.get("away") or 0)
+            home_goals += home_goals_match
+            away_goals += away_goals_match
+            goals_in_match = home_goals_match + away_goals_match
+            total_goals += goals_in_match
+            home_name = getattr(match.home_team, "name", str(match.home_team))
+            away_name = getattr(match.away_team, "name", str(match.away_team))
+            if home_goals_match > away_goals_match:
+                home_wins += 1
+            elif away_goals_match > home_goals_match:
+                away_wins += 1
+            else:
+                draws += 1
+            if goals_in_match > most_productive_goals:
+                most_productive_goals = goals_in_match
+                most_productive_match = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            margin = abs(home_goals_match - away_goals_match)
+            if margin > biggest_win_margin and goals_in_match > 0:
+                biggest_win_margin = margin
+                biggest_win = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            if goals_in_match > 2.5:
+                matches_over_25_goals += 1
+            if home_goals_match > 0 and away_goals_match > 0:
+                matches_both_teams_score += 1
+            if home_goals_match == 0 or away_goals_match == 0:
+                clean_sheets += 1
+        average_goals_per_match = round(total_goals / total_matches, 2)
+        home_win_percentage = round((home_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        away_win_percentage = round((away_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        draw_percentage = round((draws / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        return DailyAnalysis(
+            date=analysis_date,
+            total_matches=total_matches,
+            total_goals=total_goals,
+            average_goals_per_match=average_goals_per_match,
+            home_goals=home_goals,
+            away_goals=away_goals,
+            total_cards=0,
+            average_cards_per_match=0.0,
+            home_wins=home_wins,
+            away_wins=away_wins,
+            draws=draws,
+            home_win_percentage=home_win_percentage,
+            away_win_percentage=away_win_percentage,
+            draw_percentage=draw_percentage,
+            matches_over_25_goals=matches_over_25_goals,
+            matches_both_teams_score=matches_both_teams_score,
+            clean_sheets=clean_sheets,
+            matches_with_red_card=0,
+            most_productive_match=most_productive_match,
+            most_disciplined_match=None,
+            biggest_win=biggest_win,
+        )
+
+    async def _generate_daily_analysis_laliga(self, analysis_date: date) -> DailyAnalysis:
+        fixtures = await unified_data_service.get_fixtures_laliga()
+        matches_for_day = []
+        for match in fixtures:
+            match_date = getattr(match, "utc_date", None)
+            if match_date and match_date.date() == analysis_date:
+                matches_for_day.append(match)
+        total_matches = len(matches_for_day)
+        if total_matches == 0:
+            return DailyAnalysis(
+                date=analysis_date,
+                total_matches=0,
+                total_goals=0,
+                average_goals_per_match=0.0,
+                home_goals=0,
+                away_goals=0,
+                total_cards=0,
+                average_cards_per_match=0.0,
+                home_wins=0,
+                away_wins=0,
+                draws=0,
+                home_win_percentage=0.0,
+                away_win_percentage=0.0,
+                draw_percentage=0.0,
+                matches_over_25_goals=0,
+                matches_both_teams_score=0,
+                clean_sheets=0,
+                matches_with_red_card=0,
+                most_productive_match=None,
+                most_disciplined_match=None,
+                biggest_win=None,
+            )
+        total_goals = 0
+        home_goals = 0
+        away_goals = 0
+        home_wins = 0
+        away_wins = 0
+        draws = 0
+        matches_over_25_goals = 0
+        matches_both_teams_score = 0
+        clean_sheets = 0
+        most_productive_match = None
+        most_productive_goals = -1
+        biggest_win = None
+        biggest_win_margin = -1
+        for match in matches_for_day:
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+            home_goals_match = 0
+            away_goals_match = 0
+            if isinstance(full_time, dict):
+                home_goals_match = int(full_time.get("home") or 0)
+                away_goals_match = int(full_time.get("away") or 0)
+            home_goals += home_goals_match
+            away_goals += away_goals_match
+            goals_in_match = home_goals_match + away_goals_match
+            total_goals += goals_in_match
+            home_name = getattr(match.home_team, "name", str(match.home_team))
+            away_name = getattr(match.away_team, "name", str(match.away_team))
+            if home_goals_match > away_goals_match:
+                home_wins += 1
+            elif away_goals_match > home_goals_match:
+                away_wins += 1
+            else:
+                draws += 1
+            if goals_in_match > most_productive_goals:
+                most_productive_goals = goals_in_match
+                most_productive_match = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            margin = abs(home_goals_match - away_goals_match)
+            if margin > biggest_win_margin and goals_in_match > 0:
+                biggest_win_margin = margin
+                biggest_win = f"{home_name} {home_goals_match}-{away_goals_match} {away_name}"
+            if goals_in_match > 2.5:
+                matches_over_25_goals += 1
+            if home_goals_match > 0 and away_goals_match > 0:
+                matches_both_teams_score += 1
+            if home_goals_match == 0 or away_goals_match == 0:
+                clean_sheets += 1
+        average_goals_per_match = round(total_goals / total_matches, 2)
+        home_win_percentage = round((home_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        away_win_percentage = round((away_wins / total_matches) * 100, 1) if total_matches > 0 else 0.0
+        draw_percentage = round((draws / total_matches) * 100, 1) if total_matches > 0 else 0.0
         return DailyAnalysis(
             date=analysis_date,
             total_matches=total_matches,

@@ -94,6 +94,129 @@ class PredictionService:
             logger.error(f"Error predicting next matchday for Norway: {e}")
             raise
     
+    async def predict_next_matchday_premier(self) -> List[dict]:
+        try:
+            training_stats_2025 = await self.train_on_2025_history()
+            fixtures = await unified_data_service.get_fixtures_premier()
+            standings = await unified_data_service.get_standings_premier()
+            
+            if not fixtures or not standings:
+                return []
+            
+            upcoming_matches = []
+            for match in fixtures:
+                kickoff = getattr(match, "utc_date", None)
+                if kickoff and kickoff >= datetime.now() and (kickoff - datetime.now()).days <= 7:
+                    upcoming_matches.append(match)
+            
+            results = []
+            for match in upcoming_matches:
+                prediction_input = await self._prepare_prediction_input(match, standings)
+                prediction = self.model.predict(prediction_input)
+                
+                home_team_name = getattr(match.home_team, "name", str(match.home_team))
+                away_team_name = getattr(match.away_team, "name", str(match.away_team))
+                kickoff = getattr(match, "utc_date", None)
+                
+                results.append(
+                    {
+                        "match_id": match.id,
+                        "home_team": home_team_name,
+                        "away_team": away_team_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff.isoformat() if kickoff else None,
+                        "prediction": prediction,
+                    }
+                )
+            
+            logger.info(f"Generated {len(results)} Premier League predictions for next matchday")
+            return results
+        except Exception as e:
+            logger.error(f"Error predicting next matchday for Premier League: {e}")
+            raise
+    
+    async def predict_next_matchday_bundesliga(self) -> List[dict]:
+        try:
+            training_stats_2025 = await self.train_on_2025_history()
+            fixtures = await unified_data_service.get_fixtures_bundesliga()
+            standings = await unified_data_service.get_standings_bundesliga()
+            
+            if not fixtures or not standings:
+                return []
+            
+            upcoming_matches = []
+            for match in fixtures:
+                kickoff = getattr(match, "utc_date", None)
+                if kickoff and kickoff >= datetime.now() and (kickoff - datetime.now()).days <= 7:
+                    upcoming_matches.append(match)
+            
+            results = []
+            for match in upcoming_matches:
+                prediction_input = await self._prepare_prediction_input(match, standings)
+                prediction = self.model.predict(prediction_input)
+                
+                home_team_name = getattr(match.home_team, "name", str(match.home_team))
+                away_team_name = getattr(match.away_team, "name", str(match.away_team))
+                kickoff = getattr(match, "utc_date", None)
+                
+                results.append(
+                    {
+                        "match_id": match.id,
+                        "home_team": home_team_name,
+                        "away_team": away_team_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff.isoformat() if kickoff else None,
+                        "prediction": prediction,
+                    }
+                )
+            
+            logger.info(f"Generated {len(results)} Bundesliga predictions for next matchday")
+            return results
+        except Exception as e:
+            logger.error(f"Error predicting next matchday for Bundesliga: {e}")
+            raise
+    
+    async def predict_next_matchday_laliga(self) -> List[dict]:
+        try:
+            training_stats_2025 = await self.train_on_2025_history()
+            fixtures = await unified_data_service.get_fixtures_laliga()
+            standings = await unified_data_service.get_standings_laliga()
+            
+            if not fixtures or not standings:
+                return []
+            
+            upcoming_matches = []
+            for match in fixtures:
+                kickoff = getattr(match, "utc_date", None)
+                if kickoff and kickoff >= datetime.now() and (kickoff - datetime.now()).days <= 7:
+                    upcoming_matches.append(match)
+            
+            results = []
+            for match in upcoming_matches:
+                prediction_input = await self._prepare_prediction_input(match, standings)
+                prediction = self.model.predict(prediction_input)
+                
+                home_team_name = getattr(match.home_team, "name", str(match.home_team))
+                away_team_name = getattr(match.away_team, "name", str(match.away_team))
+                kickoff = getattr(match, "utc_date", None)
+                
+                results.append(
+                    {
+                        "match_id": match.id,
+                        "home_team": home_team_name,
+                        "away_team": away_team_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff.isoformat() if kickoff else None,
+                        "prediction": prediction,
+                    }
+                )
+            
+            logger.info(f"Generated {len(results)} La Liga predictions for next matchday")
+            return results
+        except Exception as e:
+            logger.error(f"Error predicting next matchday for La Liga: {e}")
+            raise
+    
     async def predict_single_match(self, match_id: int) -> PredictionOutput:
         """
         Predict outcome for a specific match.
@@ -221,6 +344,12 @@ class PredictionService:
         standings_serie_a = None
         fixtures_norway = None
         standings_norway = None
+        fixtures_premier = None
+        standings_premier = None
+        fixtures_bundesliga = None
+        standings_bundesliga = None
+        fixtures_laliga = None
+        standings_laliga = None
 
         if league in (None, "seriea"):
             fixtures_serie_a = await unified_data_service.get_fixtures(None)
@@ -229,6 +358,18 @@ class PredictionService:
         if league in (None, "norway"):
             fixtures_norway = await unified_data_service.get_fixtures_norway(None)
             standings_norway = await unified_data_service.get_standings_norway()
+
+        if league in (None, "premier"):
+            fixtures_premier = await unified_data_service.get_fixtures_premier(None)
+            standings_premier = await unified_data_service.get_standings_premier()
+
+        if league in (None, "bundesliga"):
+            fixtures_bundesliga = await unified_data_service.get_fixtures_bundesliga(None)
+            standings_bundesliga = await unified_data_service.get_standings_bundesliga()
+
+        if league in (None, "laliga"):
+            fixtures_laliga = await unified_data_service.get_fixtures_laliga(None)
+            standings_laliga = await unified_data_service.get_standings_laliga()
 
         start_date = date(2025, 8, 1)
         end_date = date(2025, 12, 31)
@@ -280,6 +421,9 @@ class PredictionService:
 
         await add_matches(fixtures_serie_a or [], standings_serie_a, "seriea")
         await add_matches(fixtures_norway or [], standings_norway, "norway")
+        await add_matches(fixtures_premier or [], standings_premier, "premier")
+        await add_matches(fixtures_bundesliga or [], standings_bundesliga, "bundesliga")
+        await add_matches(fixtures_laliga or [], standings_laliga, "laliga")
 
         return training_data
 
@@ -288,6 +432,12 @@ class PredictionService:
         standings_serie_a = await unified_data_service.get_standings()
         fixtures_norway = await unified_data_service.get_fixtures_norway(None)
         standings_norway = await unified_data_service.get_standings_norway()
+        fixtures_premier = await unified_data_service.get_fixtures_premier(None)
+        standings_premier = await unified_data_service.get_standings_premier()
+        fixtures_bundesliga = await unified_data_service.get_fixtures_bundesliga(None)
+        standings_bundesliga = await unified_data_service.get_standings_bundesliga()
+        fixtures_laliga = await unified_data_service.get_fixtures_laliga(None)
+        standings_laliga = await unified_data_service.get_standings_laliga()
 
         start_date = date(2026, 1, 1)
         end_date = date.today()
@@ -339,6 +489,9 @@ class PredictionService:
 
         await add_matches(fixtures_serie_a or [], standings_serie_a, "seriea")
         await add_matches(fixtures_norway or [], standings_norway, "norway")
+        await add_matches(fixtures_premier or [], standings_premier, "premier")
+        await add_matches(fixtures_bundesliga or [], standings_bundesliga, "bundesliga")
+        await add_matches(fixtures_laliga or [], standings_laliga, "laliga")
 
         return training_data
 
@@ -364,7 +517,7 @@ class PredictionService:
         }
 
     async def get_2025_stats(self, league: Optional[str] = None) -> dict:
-        historical_data = await self._build_2025_training_data()
+        historical_data = await self._build_2025_training_data(league=None)
         if not historical_data:
             return {
                 "accuracy_2025": 0.0,
@@ -521,6 +674,60 @@ class PredictionService:
             logger.error(f"Error evaluating predictions for Norway: {e}")
             raise
 
+    async def evaluate_predictions_premier(self, matchday: Optional[int] = None) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_premier(matchday)
+            standings = await unified_data_service.get_standings_premier()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_matches = [
+                match for match in fixtures
+                if getattr(match, "status", None) == MatchStatus.FINISHED
+            ]
+
+            return await self._evaluate_matches(finished_matches, standings)
+        except Exception as e:
+            logger.error(f"Error evaluating predictions for Premier League: {e}")
+            raise
+
+    async def evaluate_predictions_bundesliga(self, matchday: Optional[int] = None) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_bundesliga(matchday)
+            standings = await unified_data_service.get_standings_bundesliga()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_matches = [
+                match for match in fixtures
+                if getattr(match, "status", None) == MatchStatus.FINISHED
+            ]
+
+            return await self._evaluate_matches(finished_matches, standings)
+        except Exception as e:
+            logger.error(f"Error evaluating predictions for Bundesliga: {e}")
+            raise
+
+    async def evaluate_predictions_laliga(self, matchday: Optional[int] = None) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_laliga(matchday)
+            standings = await unified_data_service.get_standings_laliga()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_matches = [
+                match for match in fixtures
+                if getattr(match, "status", None) == MatchStatus.FINISHED
+            ]
+
+            return await self._evaluate_matches(finished_matches, standings)
+        except Exception as e:
+            logger.error(f"Error evaluating predictions for La Liga: {e}")
+            raise
+
     async def evaluate_recent_matchdays_serie_a(self, last_n_matchdays: int = 18) -> dict:
         try:
             fixtures = await unified_data_service.get_fixtures(None)
@@ -599,6 +806,126 @@ class PredictionService:
             return evaluation
         except Exception as e:
             logger.error(f"Error evaluating recent matchdays for Norway: {e}")
+            raise
+
+    async def evaluate_recent_matchdays_premier(self, last_n_matchdays: int = 18) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_premier(None)
+            standings = await unified_data_service.get_standings_premier()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_by_matchday = {}
+            for match in fixtures:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+                matchday = getattr(match, "matchday", None)
+                if matchday is None:
+                    continue
+                finished_by_matchday.setdefault(matchday, []).append(match)
+
+            if not finished_by_matchday:
+                return {"matches_evaluated": 0}
+
+            sorted_matchdays = sorted(finished_by_matchday.keys())
+            if last_n_matchdays > 0 and len(sorted_matchdays) > last_n_matchdays:
+                selected_matchdays = sorted_matchdays[-last_n_matchdays:]
+            else:
+                selected_matchdays = sorted_matchdays
+
+            selected_matches = []
+            for md in selected_matchdays:
+                selected_matches.extend(finished_by_matchday[md])
+
+            if not selected_matches:
+                return {"matches_evaluated": 0}
+
+            evaluation = await self._evaluate_matches(selected_matches, standings)
+            evaluation["matchdays"] = selected_matchdays
+            return evaluation
+        except Exception as e:
+            logger.error(f"Error evaluating recent matchdays for Premier League: {e}")
+            raise
+
+    async def evaluate_recent_matchdays_bundesliga(self, last_n_matchdays: int = 18) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_bundesliga(None)
+            standings = await unified_data_service.get_standings_bundesliga()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_by_matchday = {}
+            for match in fixtures:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+                matchday = getattr(match, "matchday", None)
+                if matchday is None:
+                    continue
+                finished_by_matchday.setdefault(matchday, []).append(match)
+
+            if not finished_by_matchday:
+                return {"matches_evaluated": 0}
+
+            sorted_matchdays = sorted(finished_by_matchday.keys())
+            if last_n_matchdays > 0 and len(sorted_matchdays) > last_n_matchdays:
+                selected_matchdays = sorted_matchdays[-last_n_matchdays:]
+            else:
+                selected_matchdays = sorted_matchdays
+
+            selected_matches = []
+            for md in selected_matchdays:
+                selected_matches.extend(finished_by_matchday[md])
+
+            if not selected_matches:
+                return {"matches_evaluated": 0}
+
+            evaluation = await self._evaluate_matches(selected_matches, standings)
+            evaluation["matchdays"] = selected_matchdays
+            return evaluation
+        except Exception as e:
+            logger.error(f"Error evaluating recent matchdays for Bundesliga: {e}")
+            raise
+
+    async def evaluate_recent_matchdays_laliga(self, last_n_matchdays: int = 18) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_laliga(None)
+            standings = await unified_data_service.get_standings_laliga()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_by_matchday = {}
+            for match in fixtures:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+                matchday = getattr(match, "matchday", None)
+                if matchday is None:
+                    continue
+                finished_by_matchday.setdefault(matchday, []).append(match)
+
+            if not finished_by_matchday:
+                return {"matches_evaluated": 0}
+
+            sorted_matchdays = sorted(finished_by_matchday.keys())
+            if last_n_matchdays > 0 and len(sorted_matchdays) > last_n_matchdays:
+                selected_matchdays = sorted_matchdays[-last_n_matchdays:]
+            else:
+                selected_matchdays = sorted_matchdays
+
+            selected_matches = []
+            for md in selected_matchdays:
+                selected_matches.extend(finished_by_matchday[md])
+
+            if not selected_matches:
+                return {"matches_evaluated": 0}
+
+            evaluation = await self._evaluate_matches(selected_matches, standings)
+            evaluation["matchdays"] = selected_matchdays
+            return evaluation
+        except Exception as e:
+            logger.error(f"Error evaluating recent matchdays for La Liga: {e}")
             raise
 
     async def _evaluate_matches(self, matches: List, standings: Standings) -> dict:
