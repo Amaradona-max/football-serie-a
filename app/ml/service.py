@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 import math
 import logging
 
@@ -21,6 +21,7 @@ class PredictionService:
             List of predictions for each match
         """
         try:
+            training_stats_2025 = await self.train_on_2025_history()
             fixtures = await unified_data_service.get_fixtures()
             standings = await unified_data_service.get_standings()
             
@@ -39,7 +40,13 @@ class PredictionService:
                 prediction = self.model.predict(prediction_input)
                 predictions.append(prediction)
             
-            logger.info(f"Generated {len(predictions)} predictions for next matchday")
+            logger.info(
+                f"Generated {len(predictions)} predictions for next matchday "
+                f"(train_accuracy={training_stats_2025.get('training_accuracy', 0.0):.3f}, "
+                f"matches_training={training_stats_2025.get('training_matches', 0)}, "
+                f"matches_2025={training_stats_2025.get('matches_2025', 0)}, "
+                f"matches_2026={training_stats_2025.get('matches_2026', 0)})"
+            )
             return predictions
             
         except Exception as e:
@@ -48,6 +55,7 @@ class PredictionService:
     
     async def predict_next_matchday_norway(self) -> List[dict]:
         try:
+            training_stats_2025 = await self.train_on_2025_history()
             fixtures = await unified_data_service.get_fixtures_norway()
             standings = await unified_data_service.get_standings_norway()
             
@@ -207,6 +215,275 @@ class PredictionService:
         except Exception as e:
             logger.error(f"Error training model: {e}")
             raise
+
+    async def _build_2025_training_data(self, league: Optional[str] = None) -> List[dict]:
+        fixtures_serie_a = None
+        standings_serie_a = None
+        fixtures_norway = None
+        standings_norway = None
+
+        if league in (None, "seriea"):
+            fixtures_serie_a = await unified_data_service.get_fixtures(None)
+            standings_serie_a = await unified_data_service.get_standings()
+
+        if league in (None, "norway"):
+            fixtures_norway = await unified_data_service.get_fixtures_norway(None)
+            standings_norway = await unified_data_service.get_standings_norway()
+
+        start_date = date(2025, 8, 1)
+        end_date = date(2025, 12, 31)
+
+        training_data: List[dict] = []
+
+        async def add_matches(matches: List, standings: Standings, league_name: str) -> None:
+            if not matches or not standings:
+                return
+
+            for match in matches:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+
+                kickoff = getattr(match, "utc_date", None)
+                if not isinstance(kickoff, datetime):
+                    continue
+
+                match_date = kickoff.date()
+                if match_date < start_date or match_date > end_date:
+                    continue
+
+                prediction_input = await self._prepare_prediction_input(match, standings)
+
+                score_obj = getattr(match, "score", None)
+                full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+                if not isinstance(full_time, dict):
+                    continue
+
+                home_goals = int(full_time.get("home") or 0)
+                away_goals = int(full_time.get("away") or 0)
+
+                if home_goals > away_goals:
+                    actual = "H"
+                elif away_goals > home_goals:
+                    actual = "A"
+                else:
+                    actual = "D"
+
+                training_data.append(
+                    {
+                        "prediction_input": prediction_input,
+                        "actual_outcome": actual,
+                        "league": league_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff,
+                    }
+                )
+
+        await add_matches(fixtures_serie_a or [], standings_serie_a, "seriea")
+        await add_matches(fixtures_norway or [], standings_norway, "norway")
+
+        return training_data
+
+    async def _build_2026_training_data(self) -> List[dict]:
+        fixtures_serie_a = await unified_data_service.get_fixtures(None)
+        standings_serie_a = await unified_data_service.get_standings()
+        fixtures_norway = await unified_data_service.get_fixtures_norway(None)
+        standings_norway = await unified_data_service.get_standings_norway()
+
+        start_date = date(2026, 1, 1)
+        end_date = date.today()
+
+        training_data: List[dict] = []
+
+        async def add_matches(matches: List, standings: Standings, league_name: str) -> None:
+            if not matches or not standings:
+                return
+
+            for match in matches:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+
+                kickoff = getattr(match, "utc_date", None)
+                if not isinstance(kickoff, datetime):
+                    continue
+
+                match_date = kickoff.date()
+                if match_date < start_date or match_date > end_date:
+                    continue
+
+                prediction_input = await self._prepare_prediction_input(match, standings)
+
+                score_obj = getattr(match, "score", None)
+                full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+                if not isinstance(full_time, dict):
+                    continue
+
+                home_goals = int(full_time.get("home") or 0)
+                away_goals = int(full_time.get("away") or 0)
+
+                if home_goals > away_goals:
+                    actual = "H"
+                elif away_goals > home_goals:
+                    actual = "A"
+                else:
+                    actual = "D"
+
+                training_data.append(
+                    {
+                        "prediction_input": prediction_input,
+                        "actual_outcome": actual,
+                        "league": league_name,
+                        "matchday": getattr(match, "matchday", None),
+                        "kickoff": kickoff,
+                    }
+                )
+
+        await add_matches(fixtures_serie_a or [], standings_serie_a, "seriea")
+        await add_matches(fixtures_norway or [], standings_norway, "norway")
+
+        return training_data
+
+    async def train_on_2025_history(self) -> dict:
+        data_2025 = await self._build_2025_training_data()
+        data_2026 = await self._build_2026_training_data()
+
+        historical_data = data_2025 + data_2026
+        if not historical_data:
+            logger.info("No 2025/2026 historical data available for training")
+            return {
+                "training_accuracy": 0.0,
+                "training_matches": 0,
+                "matches_2025": 0,
+                "matches_2026": 0,
+            }
+        accuracy = await self.train_model(historical_data)
+        return {
+            "training_accuracy": accuracy,
+            "training_matches": len(historical_data),
+            "matches_2025": len(data_2025),
+            "matches_2026": len(data_2026),
+        }
+
+    async def get_2025_stats(self, league: Optional[str] = None) -> dict:
+        historical_data = await self._build_2025_training_data()
+        if not historical_data:
+            return {
+                "accuracy_2025": 0.0,
+                "matches_2025": 0,
+            }
+
+        correct = 0
+        total = 0
+        per_league_stats = {}
+
+        for item in historical_data:
+            input_data = item.get("prediction_input")
+            actual = item.get("actual_outcome")
+            if input_data is None or actual not in ("H", "D", "A"):
+                continue
+
+            item_league = item.get("league")
+            if league is not None and item_league != league:
+                continue
+
+            prediction = self.model.predict(input_data)
+            probabilities = {
+                "H": prediction.home_win_prob,
+                "D": prediction.draw_prob,
+                "A": prediction.away_win_prob,
+            }
+            predicted_label = max(probabilities.items(), key=lambda x: x[1])[0]
+
+            if predicted_label == actual:
+                correct += 1
+            total += 1
+
+            if item_league:
+                if item_league not in per_league_stats:
+                    per_league_stats[item_league] = {"correct": 0, "total": 0}
+                if predicted_label == actual:
+                    per_league_stats[item_league]["correct"] += 1
+                per_league_stats[item_league]["total"] += 1
+
+        if total == 0:
+            accuracy = 0.0
+        else:
+            accuracy = correct / total
+
+        result = {
+            "accuracy_2025": accuracy,
+            "matches_2025": total,
+        }
+
+        for league_name, stats in per_league_stats.items():
+            league_total = stats["total"]
+            league_accuracy = stats["correct"] / league_total if league_total > 0 else 0.0
+            result[league_name] = {
+                "accuracy_2025": league_accuracy,
+                "matches_2025": league_total,
+            }
+
+        return result
+
+    async def get_2026_stats(self, league: Optional[str] = None) -> dict:
+        historical_data = await self._build_2026_training_data()
+        if not historical_data:
+            return {
+                "accuracy_2026": 0.0,
+                "matches_2026": 0,
+            }
+
+        correct = 0
+        total = 0
+        per_league_stats = {}
+
+        for item in historical_data:
+            input_data = item.get("prediction_input")
+            actual = item.get("actual_outcome")
+            if input_data is None or actual not in ("H", "D", "A"):
+                continue
+
+            item_league = item.get("league")
+            if league is not None and item_league != league:
+                continue
+
+            prediction = self.model.predict(input_data)
+            probabilities = {
+                "H": prediction.home_win_prob,
+                "D": prediction.draw_prob,
+                "A": prediction.away_win_prob,
+            }
+            predicted_label = max(probabilities.items(), key=lambda x: x[1])[0]
+
+            if predicted_label == actual:
+                correct += 1
+            total += 1
+
+            if item_league:
+                if item_league not in per_league_stats:
+                    per_league_stats[item_league] = {"correct": 0, "total": 0}
+                if predicted_label == actual:
+                    per_league_stats[item_league]["correct"] += 1
+                per_league_stats[item_league]["total"] += 1
+
+        if total == 0:
+            accuracy = 0.0
+        else:
+            accuracy = correct / total
+
+        result = {
+            "accuracy_2026": accuracy,
+            "matches_2026": total,
+        }
+
+        for league_name, stats in per_league_stats.items():
+            league_total = stats["total"]
+            league_accuracy = stats["correct"] / league_total if league_total > 0 else 0.0
+            result[league_name] = {
+                "accuracy_2026": league_accuracy,
+                "matches_2026": league_total,
+            }
+
+        return result
 
     async def evaluate_predictions_serie_a(self, matchday: Optional[int] = None) -> dict:
         try:

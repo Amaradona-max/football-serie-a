@@ -220,6 +220,34 @@ async def get_reliability_norway(
         monitor_api_call("api", "norway_predictions_reliability", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/predictions/history/2025")
+async def get_history_2025_stats(
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_history_2025", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.get_2025_stats()
+        monitor_api_call("api", "predictions_history_2025", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_history_2025", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/history/2026")
+async def get_history_2026_stats(
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_history_2026", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.get_2026_stats()
+        monitor_api_call("api", "predictions_history_2026", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_history_2026", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def _check_redis_health() -> str:
     """Check Redis connection health"""
     try:
