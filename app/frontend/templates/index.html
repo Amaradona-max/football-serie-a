@@ -49,7 +49,7 @@
                     Eliteserien Norvegia
                 </button>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-7 gap-2">
+            <div class="grid grid-cols-2 md:grid-cols-9 gap-2">
                 <button onclick="showSection('live-matches')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
                     📊 Live
                 </button>
@@ -70,6 +70,12 @@
                 </button>
                 <button onclick="showSection('analysis')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
                     📈 Analisi
+                </button>
+                <button onclick="showSection('top-picks')" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    ⭐ Top gare
+                </button>
+                <button onclick="showSection('playable')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    🎯 Gare da giocare
                 </button>
             </div>
         </div>
@@ -124,11 +130,58 @@
 
         <!-- Predictions Section -->
         <section id="predictions" class="section hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">🔮 Previsioni Prossima Giornata</h2>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">🔮 Previsioni Prossima Giornata</h2>
+                <div class="mt-3 md:mt-0 flex items-center space-x-3">
+                    <label class="inline-flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                        <input id="only-top-picks-toggle" type="checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                        <span>Mostra solo pronostici ad alta affidabilità</span>
+                    </label>
+                </div>
+            </div>
             <div id="predictions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="text-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
                     <p class="text-gray-600 mt-4">Caricamento previsioni gare...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Picks Section -->
+        <section id="top-picks" class="section hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">⭐ Migliori top gare per giornata</h2>
+                <div class="mt-3 md:mt-0 flex items-center space-x-3">
+                    <div>
+                        <label for="top-picks-matchday" class="block text-sm font-medium text-gray-700">Giornata</label>
+                        <input id="top-picks-matchday" type="number" min="1" class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ultima">
+                    </div>
+                    <button onclick="loadSectionData('top-picks')" class="mt-5 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-pink-500 hover:bg-pink-600">
+                        Aggiorna
+                    </button>
+                </div>
+            </div>
+            <div id="top-picks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Playable Matches Section -->
+        <section id="playable" class="section hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">🎯 Gare da giocare</h2>
+                <p class="mt-3 md:mt-0 text-sm text-gray-600 max-w-xl">
+                    Selezione delle migliori tre partite da giocare per ogni campionato,
+                    basata sulle probabilità più alte del modello e sulla sua affidabilità recente.
+                </p>
+            </div>
+            <div id="playable-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento gare da giocare...</p>
                 </div>
             </div>
         </section>
@@ -318,11 +371,571 @@
                             ]);
                         }
                         break;
+                    case 'top-picks':
+                        if (currentLeague === 'seriea') {
+                            await loadTopPicks();
+                        } else {
+                            await loadTopPicksNorway();
+                        }
+                        break;
+                    case 'playable':
+                        if (currentLeague === 'seriea') {
+                            await loadPlayableMatches();
+                        } else {
+                            await loadPlayableMatchesNorway();
+                        }
+                        break;
                 }
             } catch (error) {
                 console.error('Error loading section data:', error);
                 showError(sectionId, 'Errore nel caricamento dei dati');
             }
+        }
+
+        async function loadTopPicks() {
+            const container = document.getElementById('top-picks-container');
+            if (!container) return;
+
+            const matchdayInput = document.getElementById('top-picks-matchday');
+            const matchdayValue = matchdayInput && matchdayInput.value ? matchdayInput.value : null;
+
+            let url = `${API_BASE_URL}/predictions/evaluate/seriea`;
+            if (matchdayValue) {
+                url += `?matchday=${encodeURIComponent(matchdayValue)}`;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara valutata per questa giornata</h3>
+                            <p class="text-gray-600">Seleziona un'altra giornata o attendi che siano disponibili nuove valutazioni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sorted = data.matches.slice().sort((a, b) => {
+                    const accA = typeof a.prediction_success_probability === 'number' ? a.prediction_success_probability : 0;
+                    const accB = typeof b.prediction_success_probability === 'number' ? b.prediction_success_probability : 0;
+                    return accB - accA;
+                });
+
+                const minSuccessThreshold = 70;
+                const maxTopMatches = 6;
+
+                const topMatches = sorted.filter(m => {
+                    const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
+                    return acc >= minSuccessThreshold;
+                }).slice(0, maxTopMatches);
+
+                if (topMatches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
+                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (typeof data.overall_accuracy === 'number') {
+                    const overallPct = Math.round(data.overall_accuracy * 100);
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità pronostici giornata</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">${overallPct}% successo complessivo</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Basata su ${data.matches_evaluated || data.matches.length} partite valutate
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">
+                                        Selezione delle gare con maggiore probabilità storica di pronostico corretto
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const item of topMatches) {
+                    const homeTeam = item.home_team || (item.match && item.match.home_team) || 'Casa';
+                    const awayTeam = item.away_team || (item.match && item.match.away_team) || 'Trasferta';
+                    const matchday = item.matchday || (item.match && item.match.matchday) || data.matchday || '-';
+
+                    const successProb = typeof item.prediction_success_probability === 'number'
+                        ? Math.round(item.prediction_success_probability)
+                        : null;
+
+                    const modelProb = typeof item.predicted_outcome_probability === 'number'
+                        ? Math.round(item.predicted_outcome_probability)
+                        : null;
+
+                    const outcomeLabel = item.predicted_outcome || (item.prediction && item.prediction.label) || '';
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-pink-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-pink-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${matchday}
+                                    </span>
+                                    ${successProb !== null ? `
+                                    <span class="text-sm font-semibold">
+                                        Probabilità successo pronostico: ${successProb}%
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${homeTeam} - ${awayTeam}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Esito suggerito dal modello</h4>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-sm text-gray-700">
+                                        <div class="font-bold text-indigo-700 text-base">${outcomeLabel || 'Esito non disponibile'}</div>
+                                        ${modelProb !== null ? `
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità stimata dal modello: ${modelProb}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    ${item.hit !== undefined ? `
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${item.hit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${item.hit ? 'Pronostico corretto' : 'Pronostico errato'}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Questa gara è stata selezionata perché combina una forte probabilità
+                                    stimata dal modello con una buona affidabilità storica dei pronostici.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading top picks:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento delle migliori top gare</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadTopPicksNorway() {
+            const container = document.getElementById('top-picks-container');
+            if (!container) return;
+
+            const matchdayInput = document.getElementById('top-picks-matchday');
+            const matchdayValue = matchdayInput && matchdayInput.value ? matchdayInput.value : null;
+
+            let url = `${API_BASE_URL}/norway/predictions/evaluate`;
+            if (matchdayValue) {
+                url += `?matchday=${encodeURIComponent(matchdayValue)}`;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento migliori top gare...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara valutata per questa giornata</h3>
+                            <p class="text-gray-600">Seleziona un'altra giornata o attendi che siano disponibili nuove valutazioni.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sorted = data.matches.slice().sort((a, b) => {
+                    const accA = typeof a.prediction_success_probability === 'number' ? a.prediction_success_probability : 0;
+                    const accB = typeof b.prediction_success_probability === 'number' ? b.prediction_success_probability : 0;
+                    return accB - accA;
+                });
+
+                const minSuccessThreshold = 70;
+                const maxTopMatches = 6;
+
+                const topMatches = sorted.filter(m => {
+                    const acc = typeof m.prediction_success_probability === 'number' ? m.prediction_success_probability : 0;
+                    return acc >= minSuccessThreshold;
+                }).slice(0, maxTopMatches);
+
+                if (topMatches.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">Nessuna gara con alta probabilità di successo</h3>
+                            <p class="text-gray-600">Per questa giornata il modello non ha individuato pronostici davvero affidabili.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (typeof data.overall_accuracy === 'number') {
+                    const overallPct = Math.round(data.overall_accuracy * 100);
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità pronostici giornata Norvegia</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">${overallPct}% successo complessivo</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Basata su ${data.matches_evaluated || data.matches.length} partite valutate
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">
+                                        Selezione delle gare con maggiore probabilità storica di pronostico corretto
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const item of topMatches) {
+                    const homeTeam = item.home_team || (item.match && item.match.home_team) || 'Casa';
+                    const awayTeam = item.away_team || (item.match && item.match.away_team) || 'Trasferta';
+                    const matchday = item.matchday || (item.match && item.match.matchday) || data.matchday || '-';
+
+                    const successProb = typeof item.prediction_success_probability === 'number'
+                        ? Math.round(item.prediction_success_probability)
+                        : null;
+
+                    const modelProb = typeof item.predicted_outcome_probability === 'number'
+                        ? Math.round(item.predicted_outcome_probability)
+                        : null;
+
+                    const outcomeLabel = item.predicted_outcome || (item.prediction && item.prediction.label) || '';
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-pink-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-pink-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${matchday}
+                                    </span>
+                                    ${successProb !== null ? `
+                                    <span class="text-sm font-semibold">
+                                        Probabilità successo pronostico: ${successProb}%
+                                    </span>
+                                    ` : ''}
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${homeTeam} - ${awayTeam}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Esito suggerito dal modello</h4>
+                                <div class="flex items-center justify-between">
+                                    <div class="text-sm text-gray-700">
+                                        <div class="font-bold text-indigo-700 text-base">${outcomeLabel || 'Esito non disponibile'}</div>
+                                        ${modelProb !== null ? `
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità stimata dal modello: ${modelProb}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    ${item.hit !== undefined ? `
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${item.hit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${item.hit ? 'Pronostico corretto' : 'Pronostico errato'}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Questa gara è stata selezionata perché combina una forte probabilità
+                                    stimata dal modello con una buona affidabilità storica dei pronostici.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading top picks Norway:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Errore nel caricamento delle migliori top gare Norvegia</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function renderPlayableMatchesForLeague(predictionsUrl, reliabilityUrl, leagueLabel, headerTitle) {
+            const container = document.getElementById('playable-container');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+                    <p class="text-gray-600 mt-4">Caricamento gare da giocare...</p>
+                </div>
+            `;
+
+            try {
+                const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                    fetch(predictionsUrl, {
+                        headers: {
+                            'X-API-Key': API_KEY
+                        }
+                    }),
+                    fetch(reliabilityUrl, {
+                        headers: {
+                            'X-API-Key': API_KEY
+                        }
+                    }).catch(() => null)
+                ]);
+
+                const data = await predictionsResponse.json();
+                let reliability = null;
+                if (reliabilityResponse && reliabilityResponse.ok) {
+                    try {
+                        reliability = await reliabilityResponse.json();
+                    } catch (e) {
+                        reliability = null;
+                    }
+                }
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    const noDataTitle = leagueLabel === 'Eliteserien'
+                        ? 'Nessuna gara disponibile da giocare in Eliteserien'
+                        : 'Nessuna gara disponibile da giocare';
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⏰</div>
+                            <h3 class="text-xl font-semibold text-gray-700">${noDataTitle}</h3>
+                            <p class="text-gray-600">Torna più tardi per le prossime gare consigliate.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let modelAccuracyPct = null;
+                if (reliability && typeof reliability.accuracy === 'number') {
+                    modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                }
+
+                const scored = data.map(match => {
+                    const p = match.prediction;
+                    const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                    return { match, maxProb };
+                }).sort((a, b) => b.maxProb - a.maxProb);
+
+                const maxTopMatches = 3;
+                const minProbForTopPick = 70;
+                const minAccuracyForTopPick = 60;
+
+                const topMatches = [];
+                for (const item of scored) {
+                    if (topMatches.length >= maxTopMatches) break;
+                    const passesProb = item.maxProb >= minProbForTopPick;
+                    const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                    if (passesProb && passesAccuracy) {
+                        topMatches.push(item.match);
+                    }
+                }
+
+                if (topMatches.length === 0) {
+                    const noHighProbTitle = leagueLabel === 'Eliteserien'
+                        ? 'Nessuna gara con alta probabilità per la prossima giornata in Eliteserien'
+                        : 'Nessuna gara con alta probabilità per la prossima giornata';
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-gray-700">${noHighProbTitle}</h3>
+                            <p class="text-gray-600">Il modello non individua al momento tre gare davvero forti su cui puntare.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const blocks = [];
+
+                if (modelAccuracyPct !== null) {
+                    blocks.push(`
+                        <div class="col-span-full mb-4">
+                            <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">${headerTitle}</div>
+                                    <div class="text-2xl font-bold text-gray-800 mt-1">Affidabilità modello: ${modelAccuracyPct}%</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Selezione automatica delle tre gare più promettenti della prossima giornata.
+                                    </div>
+                                </div>
+                                <div class="mt-3 md:mt-0">
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        Campione pensato per concentrare le giocate su pochi eventi forti
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                for (const match of topMatches) {
+                    const p = match.prediction;
+                    const kickoff = match.kickoff ? new Date(match.kickoff) : null;
+                    const kickoffText = kickoff ? kickoff.toLocaleString('it-IT', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : '';
+
+                    const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                    let outcome = '1';
+                    let fairOdds = p.home_fair_odds;
+                    if (maxProb === p.draw_prob) {
+                        outcome = 'X';
+                        fairOdds = p.draw_fair_odds;
+                    } else if (maxProb === p.away_win_prob) {
+                        outcome = '2';
+                        fairOdds = p.away_fair_odds;
+                    }
+
+                    const hasXg = p.expected_goals && typeof p.expected_goals.home === 'number' && typeof p.expected_goals.away === 'number';
+                    const totalXg = hasXg ? p.expected_goals.total : null;
+
+                    blocks.push(`
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden ring-2 ring-emerald-400 ring-offset-1">
+                            <div class="card-gradient text-white p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="bg-white text-emerald-600 px-2 py-1 rounded text-sm font-bold">
+                                        Giornata ${match.matchday || '-'}
+                                    </span>
+                                    <span class="text-sm">${kickoffText}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                            </div>
+
+                            <div class="p-4 border-b">
+                                <h4 class="font-semibold text-gray-700 mb-2">Suggerimento principale</h4>
+                                <div class="space-y-2 text-sm text-gray-700">
+                                    <div>
+                                        <div class="font-bold text-emerald-700 text-base">Segno ${outcome}</div>
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Probabilità più alta tra 1-X-2: ${maxProb}%
+                                        </div>
+                                        ${modelAccuracyPct !== null ? `
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Contestualizzato con affidabilità modello: ${modelAccuracyPct}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                        <div>
+                                            <div class="font-semibold text-gray-700 mb-1">Fair odds</div>
+                                            <div>
+                                                Segno ${outcome}: 
+                                                <span class="font-bold">${fairOdds !== null && fairOdds !== undefined ? fairOdds : '-'}</span>
+                                            </div>
+                                        </div>
+                                        ${hasXg ? `
+                                        <div>
+                                            <div class="font-semibold text-gray-700 mb-1">Goal attesi</div>
+                                            <div>${match.home_team}: <span class="font-bold">${p.expected_goals.home}</span></div>
+                                            <div>${match.away_team}: <span class="font-bold">${p.expected_goals.away}</span></div>
+                                            <div>Totale: <span class="font-bold">${totalXg}</span></div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 text-sm text-gray-600">
+                                <p>
+                                    Gara selezionata come parte del campione top ${leagueLabel},
+                                    combinando probabilità elevata del modello, fair odds e goal attesi.
+                                </p>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                container.innerHTML = blocks.join('');
+            } catch (error) {
+                console.error('Error loading playable matches for league:', error);
+                const errorTitle = leagueLabel === 'Eliteserien'
+                    ? 'Errore nel caricamento delle gare da giocare in Eliteserien'
+                    : 'Errore nel caricamento delle gare da giocare';
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-semibold text-gray-700">${errorTitle}</h3>
+                        <p class="text-gray-600">Riprova più tardi o controlla la console per maggiori dettagli.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadPlayableMatches() {
+            await renderPlayableMatchesForLeague(
+                `${API_BASE_URL}/detailed/matches/next/predictions`,
+                `${API_BASE_URL}/predictions/reliability/seriea?last_n_matchdays=18`,
+                'Serie A',
+                'Campione top Serie A'
+            );
+        }
+
+        async function loadPlayableMatchesNorway() {
+            await renderPlayableMatchesForLeague(
+                `${API_BASE_URL}/detailed/matches/next/predictions/norway`,
+                `${API_BASE_URL}/norway/predictions/reliability?last_n_matchdays=18`,
+                'Eliteserien',
+                'Campione top Eliteserien'
+            );
         }
 
         async function loadModelQuality(league) {
@@ -611,14 +1224,240 @@
             `).join('');
         }
 
-        // Load next matchday predictions
-        async function loadPredictions() {
-            const response = await fetch(`${API_BASE_URL}/detailed/matches/next/predictions`, {
-                headers: {
-                    'X-API-Key': API_KEY
+        let lastPredictionsSerieA = null;
+        let lastReliabilitySerieA = null;
+        let lastHighlightedIdsSerieA = null;
+
+        let lastPredictionsNorway = null;
+        let lastReliabilityNorway = null;
+        let lastHighlightedIdsNorway = null;
+
+        function isOnlyTopPicksEnabled() {
+            const toggle = document.getElementById('only-top-picks-toggle');
+            return toggle && toggle.checked;
+        }
+
+        function renderPredictionsGrid(data, reliability, highlightedIds, leagueLabel) {
+            const container = document.getElementById('predictions-container');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold text-gray-700">Nessuna partita in programma</h3>
+                        <p class="text-gray-600">Torna più tardi per le previsioni della prossima giornata</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
                 }
-            });
-            const data = await response.json();
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
+
+            const blocks = [];
+
+            if (modelAccuracyPct !== null) {
+                blocks.push(`
+                <div class="col-span-full mb-4">
+                    <div class="bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Affidabilità modello ${leagueLabel}</div>
+                            <div class="text-2xl font-bold text-gray-800 mt-1">${modelAccuracyPct}% accuracy</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                Basata su ultime ${reliabilityMatchdays || 0} giornate concluse
+                                ${matchesEvaluated !== null ? ` · ${matchesEvaluated} partite valutate` : ''}
+                            </div>
+                        </div>
+                        <div class="mt-3 md:mt-0">
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                Le partite evidenziate in giallo combinano alta probabilità e buon storico del modello
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                `);
+            }
+
+            const onlyTop = isOnlyTopPicksEnabled();
+
+            const topMatches = [];
+            const otherMatches = [];
+
+            for (const match of data) {
+                const p = match.prediction;
+                const bio = match.bio_rhythm_analysis || {};
+                const lineups = match.expected_lineups || null;
+                const isTopPick = highlightedIds && highlightedIds.has(match.match_id);
+
+                if (onlyTop && !isTopPick) {
+                    continue;
+                }
+
+                const kickoff = match.kickoff ? new Date(match.kickoff) : null;
+                const kickoffText = kickoff ? kickoff.toLocaleString('it-IT', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '';
+
+                const now = new Date();
+                const diffMinutes = kickoff ? (kickoff - now) / 60000 : 0;
+                const showPreMatchDetails = kickoff && diffMinutes <= 60;
+
+                const cardHtml = `
+                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden ${isTopPick ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}">
+                    <div class="card-gradient text-white p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
+                                Giornata ${match.matchday || '-'}
+                            </span>
+                            <span class="text-sm">${kickoffText}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
+                        ${isTopPick && modelAccuracyPct !== null ? `
+                        <div class="mt-2 text-center">
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-300 text-yellow-900">
+                                Pronostico ad alta affidabilità · modello ${modelAccuracyPct}% su ultime ${reliabilityMatchdays || 0} giornate
+                            </span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold text-gray-700 mb-2">${leagueLabel === 'Eliteserien' ? '📊 Pronostico Eliteserien' : '📊 Pronostico'}</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-red-100 p-2 rounded">
+                                <div class="text-sm text-red-600">1</div>
+                                <div class="font-bold text-red-700">${p.home_win_prob}%</div>
+                                ${p.home_fair_odds ? `<div class="text-xs text-red-700 mt-1">q. fair ${p.home_fair_odds}</div>` : ''}
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded">
+                                <div class="text-sm text-gray-600">X</div>
+                                <div class="font-bold text-gray-700">${p.draw_prob}%</div>
+                                ${p.draw_fair_odds ? `<div class="text-xs text-gray-700 mt-1">q. fair ${p.draw_fair_odds}</div>` : ''}
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded">
+                                <div class="text-sm text-blue-600">2</div>
+                                <div class="font-bold text-blue-700">${p.away_win_prob}%</div>
+                                ${p.away_fair_odds ? `<div class="text-xs text-blue-700 mt-1">q. fair ${p.away_fair_odds}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-center mt-2 text-sm text-gray-600">
+                            Probabile: ${p.most_likely_scoreline}
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">🎯 Goal Attesi</h4>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">${match.home_team}:</span>
+                            <span class="font-bold">${p.expected_goals.home}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">${match.away_team}:</span>
+                            <span class="font-bold">${p.expected_goals.away}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-sm">Totale:</span>
+                            <span class="font-bold">${p.expected_goals.total}</span>
+                        </div>
+                    </div>
+
+                    ${showPreMatchDetails && Object.keys(bio).length > 0 ? `
+                    <div class="p-4 border-t">
+                        <h4 class="font-semibold text-gray-700 mb-2">⭐ Bioritmo Calciatori</h4>
+                        ${Object.entries(bio).slice(0, 3).map(([player, rhythm]) => `
+                            <div class="mb-2">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="font-medium">${player}</span>
+                                    <span class="font-bold ${getRhythmColor(rhythm.overall)}">${rhythm.overall}%</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : `
+                    <div class="p-4 border-t text-sm text-gray-500">
+                        Dati bioritmo disponibili da circa un'ora prima del calcio d'inizio.
+                    </div>
+                    `}
+
+                    ${showPreMatchDetails && lineups ? `
+                    <div class="p-4 border-t">
+                        <h4 class="font-semibold text-gray-700 mb-2">📋 Probabili Formazioni</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <div class="font-semibold mb-1">${match.home_team}</div>
+                                <div>Modulo: ${lineups.home.formation}</div>
+                                <div>Allenatore: ${lineups.home.coach}</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold mb-1">${match.away_team}</div>
+                                <div>Modulo: ${lineups.away.formation}</div>
+                                <div>Allenatore: ${lineups.away.coach}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                `;
+
+                if (isTopPick) {
+                    topMatches.push(cardHtml);
+                } else {
+                    otherMatches.push(cardHtml);
+                }
+            }
+
+            if (topMatches.length === 0 && onlyTop) {
+                blocks.push(`
+                <div class="col-span-full text-center py-8">
+                    <h3 class="text-lg font-semibold text-gray-700">Nessun pronostico ad alta affidabilità per questa giornata</h3>
+                    <p class="text-gray-500 text-sm mt-1">Disattiva il filtro per vedere tutte le partite disponibili.</p>
+                </div>
+                `);
+            }
+
+            blocks.push(...topMatches);
+            blocks.push(...otherMatches);
+
+            container.innerHTML = blocks.join('');
+        }
+
+        async function loadPredictions() {
+            const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/detailed/matches/next/predictions`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }),
+                fetch(`${API_BASE_URL}/predictions/reliability/seriea?last_n_matchdays=18`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }).catch(() => null)
+            ]);
+
+            const data = await predictionsResponse.json();
+            let reliability = null;
+            if (reliabilityResponse && reliabilityResponse.ok) {
+                try {
+                    reliability = await reliabilityResponse.json();
+                } catch (e) {
+                    reliability = null;
+                }
+            }
 
             const container = document.getElementById('predictions-container');
 
@@ -645,123 +1484,68 @@
                 return;
             }
 
-            container.innerHTML = data.map(match => {
-                const kickoff = new Date(match.kickoff);
-                const kickoffText = kickoff.toLocaleString('it-IT', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
+                }
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
 
-                const now = new Date();
-                const diffMinutes = (kickoff - now) / 60000;
-                const showPreMatchDetails = diffMinutes <= 60;
-
+            const sortedByProb = data.map(match => {
                 const p = match.prediction;
-                const bio = match.bio_rhythm_analysis || {};
-                const lineups = match.expected_lineups || null;
+                const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                return { match_id: match.match_id, maxProb };
+            }).sort((a, b) => b.maxProb - a.maxProb);
 
-                return `
-                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div class="card-gradient text-white p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
-                                Giornata ${match.matchday}
-                            </span>
-                            <span class="text-sm">${kickoffText}</span>
-                        </div>
-                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
-                    </div>
+            const highlightedIds = new Set();
+            const maxTopPicks = 3;
+            const minProbForTopPick = 60;
+            const minAccuracyForTopPick = 55;
 
-                    <div class="p-4 border-b">
-                        <h4 class="font-semibold text-gray-700 mb-2">📊 Pronostico</h4>
-                        <div class="grid grid-cols-3 gap-2 text-center">
-                            <div class="bg-red-100 p-2 rounded">
-                                <div class="text-sm text-red-600">1</div>
-                                <div class="font-bold text-red-700">${p.home_win_prob}%</div>
-                                ${p.home_fair_odds ? `<div class="text-xs text-red-700 mt-1">q. fair ${p.home_fair_odds}</div>` : ''}
-                            </div>
-                            <div class="bg-gray-100 p-2 rounded">
-                                <div class="text-sm text-gray-600">X</div>
-                                <div class="font-bold text-gray-700">${p.draw_prob}%</div>
-                                ${p.draw_fair_odds ? `<div class="text-xs text-gray-700 mt-1">q. fair ${p.draw_fair_odds}</div>` : ''}
-                            </div>
-                            <div class="bg-blue-100 p-2 rounded">
-                                <div class="text-sm text-blue-600">2</div>
-                                <div class="font-bold text-blue-700">${p.away_win_prob}%</div>
-                                ${p.away_fair_odds ? `<div class="text-xs text-blue-700 mt-1">q. fair ${p.away_fair_odds}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="text-center mt-2 text-sm text-gray-600">
-                            Probabile: ${p.most_likely_scoreline}
-                        </div>
-                    </div>
+            for (let i = 0; i < Math.min(maxTopPicks, sortedByProb.length); i++) {
+                const item = sortedByProb[i];
+                const passesProb = item.maxProb >= minProbForTopPick;
+                const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                if (passesProb && passesAccuracy) {
+                    highlightedIds.add(item.match_id);
+                }
+            }
+            lastPredictionsSerieA = data;
+            lastReliabilitySerieA = reliability;
+            lastHighlightedIdsSerieA = highlightedIds;
 
-                    <div class="p-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">🎯 Goal Attesi</h4>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm">${match.home_team}:</span>
-                            <span class="font-bold">${p.expected_goals.home}</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-sm">${match.away_team}:</span>
-                            <span class="font-bold">${p.expected_goals.away}</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-sm">Totale:</span>
-                            <span class="font-bold">${p.expected_goals.total}</span>
-                        </div>
-                    </div>
-
-                    ${showPreMatchDetails && Object.keys(bio).length > 0 ? `
-                    <div class="p-4 border-t">
-                        <h4 class="font-semibold text-gray-700 mb-2">⭐ Bioritmo Calciatori</h4>
-                        ${Object.entries(bio).slice(0, 3).map(([player, rhythm]) => `
-                            <div class="mb-2">
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="font-medium">${player}</span>
-                                    <span class="font-bold ${getRhythmColor(rhythm.overall)}">${rhythm.overall}%</span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    ` : `
-                    <div class="p-4 border-t text-sm text-gray-500">
-                        Dati bioritmo disponibili da circa un'ora prima del calcio d'inizio.
-                    </div>
-                    `}
-
-                    ${showPreMatchDetails && lineups ? `
-                    <div class="p-4 border-t">
-                        <h4 class="font-semibold text-gray-700 mb-2">📋 Probabili Formazioni</h4>
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div class="font-semibold mb-1">${match.home_team}</div>
-                                <div>Modulo: ${lineups.home.formation}</div>
-                                <div>Allenatore: ${lineups.home.coach}</div>
-                            </div>
-                            <div>
-                                <div class="font-semibold mb-1">${match.away_team}</div>
-                                <div>Modulo: ${lineups.away.formation}</div>
-                                <div>Allenatore: ${lineups.away.coach}</div>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                `;
-            }).join('');
+            renderPredictionsGrid(data, reliability, highlightedIds, 'Serie A');
         }
 
         async function loadPredictionsNorway() {
-            const response = await fetch(`${API_BASE_URL}/detailed/matches/next/predictions/norway`, {
-                headers: {
-                    'X-API-Key': API_KEY
+            const [predictionsResponse, reliabilityResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/detailed/matches/next/predictions/norway`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }),
+                fetch(`${API_BASE_URL}/norway/predictions/reliability?last_n_matchdays=18`, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                }).catch(() => null)
+            ]);
+
+            const data = await predictionsResponse.json();
+            let reliability = null;
+            if (reliabilityResponse && reliabilityResponse.ok) {
+                try {
+                    reliability = await reliabilityResponse.json();
+                } catch (e) {
+                    reliability = null;
                 }
-            });
-            const data = await response.json();
+            }
 
             const container = document.getElementById('predictions-container');
 
@@ -788,114 +1572,43 @@
                 return;
             }
 
-            container.innerHTML = data.map(match => {
-                const kickoff = match.kickoff ? new Date(match.kickoff) : null;
-                const kickoffText = kickoff ? kickoff.toLocaleString('it-IT', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }) : '';
+            let modelAccuracyPct = null;
+            let reliabilityMatchdays = null;
+            let matchesEvaluated = null;
+            if (reliability && typeof reliability.accuracy === 'number') {
+                modelAccuracyPct = Math.round(reliability.accuracy * 100);
+                if (Array.isArray(reliability.matchdays)) {
+                    reliabilityMatchdays = reliability.matchdays.length;
+                }
+                if (typeof reliability.matches_evaluated === 'number') {
+                    matchesEvaluated = reliability.matches_evaluated;
+                }
+            }
 
-                const now = new Date();
-                const diffMinutes = kickoff ? (kickoff - now) / 60000 : 0;
-                const showPreMatchDetails = kickoff && diffMinutes <= 60;
-
+            const sortedByProb = data.map(match => {
                 const p = match.prediction;
-                const bio = match.bio_rhythm_analysis || {};
-                const lineups = match.expected_lineups || null;
+                const maxProb = Math.max(p.home_win_prob, p.draw_prob, p.away_win_prob);
+                return { match_id: match.match_id, maxProb };
+            }).sort((a, b) => b.maxProb - a.maxProb);
 
-                return `
-                <div class="match-card bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div class="card-gradient text-white p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="bg-white text-blue-600 px-2 py-1 rounded text-sm font-bold">
-                                Giornata ${match.matchday || '-'}
-                            </span>
-                            <span class="text-sm">${kickoffText}</span>
-                        </div>
-                        <h3 class="text-lg font-bold text-center">${match.home_team} - ${match.away_team}</h3>
-                    </div>
+            const highlightedIds = new Set();
+            const maxTopPicks = 3;
+            const minProbForTopPick = 60;
+            const minAccuracyForTopPick = 55;
 
-                    <div class="p-4 border-b">
-                        <h4 class="font-semibold text-gray-700 mb-2">📊 Pronostico Eliteserien</h4>
-                        <div class="grid grid-cols-3 gap-2 text-center">
-                            <div class="bg-red-100 p-2 rounded">
-                                <div class="text-sm text-red-600">1</div>
-                                <div class="font-bold text-red-700">${p.home_win_prob}%</div>
-                                ${p.home_fair_odds ? `<div class="text-xs text-red-700 mt-1">q. fair ${p.home_fair_odds}</div>` : ''}
-                            </div>
-                            <div class="bg-gray-100 p-2 rounded">
-                                <div class="text-sm text-gray-600">X</div>
-                                <div class="font-bold text-gray-700">${p.draw_prob}%</div>
-                                ${p.draw_fair_odds ? `<div class="text-xs text-gray-700 mt-1">q. fair ${p.draw_fair_odds}</div>` : ''}
-                            </div>
-                            <div class="bg-blue-100 p-2 rounded">
-                                <div class="text-sm text-blue-600">2</div>
-                                <div class="font-bold text-blue-700">${p.away_win_prob}%</div>
-                                ${p.away_fair_odds ? `<div class="text-xs text-blue-700 mt-1">q. fair ${p.away_fair_odds}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="text-center mt-2 text-sm text-gray-600">
-                            Probabile: ${p.most_likely_scoreline}
-                        </div>
-                    </div>
+            for (let i = 0; i < Math.min(maxTopPicks, sortedByProb.length); i++) {
+                const item = sortedByProb[i];
+                const passesProb = item.maxProb >= minProbForTopPick;
+                const passesAccuracy = modelAccuracyPct === null || modelAccuracyPct >= minAccuracyForTopPick;
+                if (passesProb && passesAccuracy) {
+                    highlightedIds.add(item.match_id);
+                }
+            }
+            lastPredictionsNorway = data;
+            lastReliabilityNorway = reliability;
+            lastHighlightedIdsNorway = highlightedIds;
 
-                    <div class="p-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">🎯 Goal Attesi</h4>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm">${match.home_team}:</span>
-                            <span class="font-bold">${p.expected_goals.home}</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-sm">${match.away_team}:</span>
-                            <span class="font-bold">${p.expected_goals.away}</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-sm">Totale:</span>
-                            <span class="font-bold">${p.expected_goals.total}</span>
-                        </div>
-                    </div>
-
-                    ${showPreMatchDetails && Object.keys(bio).length > 0 ? `
-                    <div class="p-4 border-t">
-                        <h4 class="font-semibold text-gray-700 mb-2">⭐ Bioritmo Calciatori</h4>
-                        ${Object.entries(bio).slice(0, 3).map(([player, rhythm]) => `
-                            <div class="mb-2">
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="font-medium">${player}</span>
-                                    <span class="font-bold ${getRhythmColor(rhythm.overall)}">${rhythm.overall}%</span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    ` : `
-                    <div class="p-4 border-t text-sm text-gray-500">
-                        Dati bioritmo disponibili da circa un'ora prima del calcio d'inizio.
-                    </div>
-                    `}
-
-                    ${showPreMatchDetails && lineups ? `
-                    <div class="p-4 border-t">
-                        <h4 class="font-semibold text-gray-700 mb-2">📋 Probabili Formazioni</h4>
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div class="font-semibold mb-1">${match.home_team}</div>
-                                <div>Modulo: ${lineups.home.formation}</div>
-                                <div>Allenatore: ${lineups.home.coach}</div>
-                            </div>
-                            <div>
-                                <div class="font-semibold mb-1">${match.away_team}</div>
-                                <div>Modulo: ${lineups.away.formation}</div>
-                                <div>Allenatore: ${lineups.away.coach}</div>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                `;
-            }).join('');
+            renderPredictionsGrid(data, reliability, highlightedIds, 'Eliteserien');
         }
 
         // Helper function for rhythm color
@@ -1586,6 +2299,28 @@
             // Initial data load
             await loadSectionData('live-matches');
             updateLastUpdated();
+
+            const topToggle = document.getElementById('only-top-picks-toggle');
+            if (topToggle) {
+                topToggle.addEventListener('change', async () => {
+                    if (currentSection !== 'predictions') {
+                        return;
+                    }
+                    if (currentLeague === 'seriea') {
+                        if (lastPredictionsSerieA && lastHighlightedIdsSerieA) {
+                            renderPredictionsGrid(lastPredictionsSerieA, lastReliabilitySerieA, lastHighlightedIdsSerieA, 'Serie A');
+                        } else {
+                            await loadPredictions();
+                        }
+                    } else {
+                        if (lastPredictionsNorway && lastHighlightedIdsNorway) {
+                            renderPredictionsGrid(lastPredictionsNorway, lastReliabilityNorway, lastHighlightedIdsNorway, 'Eliteserien');
+                        } else {
+                            await loadPredictionsNorway();
+                        }
+                    }
+                });
+            }
             
             // Set up periodic updates
             setInterval(updateLastUpdated, 60000); // Update time every minute

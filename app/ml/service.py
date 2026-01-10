@@ -244,6 +244,86 @@ class PredictionService:
             logger.error(f"Error evaluating predictions for Norway: {e}")
             raise
 
+    async def evaluate_recent_matchdays_serie_a(self, last_n_matchdays: int = 18) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures(None)
+            standings = await unified_data_service.get_standings()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_by_matchday = {}
+            for match in fixtures:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+                matchday = getattr(match, "matchday", None)
+                if matchday is None:
+                    continue
+                finished_by_matchday.setdefault(matchday, []).append(match)
+
+            if not finished_by_matchday:
+                return {"matches_evaluated": 0}
+
+            sorted_matchdays = sorted(finished_by_matchday.keys())
+            if last_n_matchdays > 0 and len(sorted_matchdays) > last_n_matchdays:
+                selected_matchdays = sorted_matchdays[-last_n_matchdays:]
+            else:
+                selected_matchdays = sorted_matchdays
+
+            selected_matches = []
+            for md in selected_matchdays:
+                selected_matches.extend(finished_by_matchday[md])
+
+            if not selected_matches:
+                return {"matches_evaluated": 0}
+
+            evaluation = await self._evaluate_matches(selected_matches, standings)
+            evaluation["matchdays"] = selected_matchdays
+            return evaluation
+        except Exception as e:
+            logger.error(f"Error evaluating recent matchdays for Serie A: {e}")
+            raise
+
+    async def evaluate_recent_matchdays_norway(self, last_n_matchdays: int = 18) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_norway(None)
+            standings = await unified_data_service.get_standings_norway()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_by_matchday = {}
+            for match in fixtures:
+                if getattr(match, "status", None) != MatchStatus.FINISHED:
+                    continue
+                matchday = getattr(match, "matchday", None)
+                if matchday is None:
+                    continue
+                finished_by_matchday.setdefault(matchday, []).append(match)
+
+            if not finished_by_matchday:
+                return {"matches_evaluated": 0}
+
+            sorted_matchdays = sorted(finished_by_matchday.keys())
+            if last_n_matchdays > 0 and len(sorted_matchdays) > last_n_matchdays:
+                selected_matchdays = sorted_matchdays[-last_n_matchdays:]
+            else:
+                selected_matchdays = sorted_matchdays
+
+            selected_matches = []
+            for md in selected_matchdays:
+                selected_matches.extend(finished_by_matchday[md])
+
+            if not selected_matches:
+                return {"matches_evaluated": 0}
+
+            evaluation = await self._evaluate_matches(selected_matches, standings)
+            evaluation["matchdays"] = selected_matchdays
+            return evaluation
+        except Exception as e:
+            logger.error(f"Error evaluating recent matchdays for Norway: {e}")
+            raise
+
     async def _evaluate_matches(self, matches: List, standings: Standings) -> dict:
         if not matches:
             return {"matches_evaluated": 0}
@@ -251,6 +331,7 @@ class PredictionService:
         brier_scores: List[float] = []
         log_losses: List[float] = []
         accuracies: List[float] = []
+        match_details: List[dict] = []
 
         for match in matches:
             prediction_input = await self._prepare_prediction_input(match, standings)
@@ -277,9 +358,11 @@ class PredictionService:
                 "A": prediction.away_win_prob,
             }
 
-            y = {"H": 1.0 if actual == "H" else 0.0,
-                 "D": 1.0 if actual == "D" else 0.0,
-                 "A": 1.0 if actual == "A" else 0.0}
+            y = {
+                "H": 1.0 if actual == "H" else 0.0,
+                "D": 1.0 if actual == "D" else 0.0,
+                "A": 1.0 if actual == "A" else 0.0,
+            }
 
             brier = (
                 (probs["H"] - y["H"]) ** 2
@@ -293,17 +376,53 @@ class PredictionService:
             log_losses.append(-math.log(max(p_true, eps)))
 
             predicted_label = max(probs.items(), key=lambda x: x[1])[0]
-            accuracies.append(1.0 if predicted_label == actual else 0.0)
+            is_hit = predicted_label == actual
+            accuracies.append(1.0 if is_hit else 0.0)
+
+            confidence = max(probs.values())
+
+            home_team_name = getattr(getattr(match, "home_team", None), "name", None)
+            away_team_name = getattr(getattr(match, "away_team", None), "name", None)
+
+            if home_team_name is None:
+                home_team_name = str(getattr(match, "home_team", "Casa"))
+            if away_team_name is None:
+                away_team_name = str(getattr(match, "away_team", "Trasferta"))
+
+            def _map_outcome_label(label: str) -> str:
+                if label == "H":
+                    return "1"
+                if label == "A":
+                    return "2"
+                if label == "D":
+                    return "X"
+                return label
+
+            match_details.append(
+                {
+                    "home_team": home_team_name,
+                    "away_team": away_team_name,
+                    "matchday": getattr(match, "matchday", None),
+                    "predicted_outcome": _map_outcome_label(predicted_label),
+                    "predicted_outcome_probability": confidence,
+                    "prediction_success_probability": confidence,
+                    "hit": is_hit,
+                }
+            )
 
         n = len(brier_scores)
         if n == 0:
             return {"matches_evaluated": 0}
 
+        accuracy_value = sum(accuracies) / n
+
         return {
             "matches_evaluated": n,
             "brier_score_mean": sum(brier_scores) / n,
             "log_loss_mean": sum(log_losses) / n,
-            "accuracy": sum(accuracies) / n,
+            "accuracy": accuracy_value,
+            "overall_accuracy": accuracy_value,
+            "matches": match_details,
         }
 
 # Global prediction service instance

@@ -727,6 +727,89 @@ class DetailedStatsService:
 
         goalmodel_url = settings.GOALMODEL_API_URL
 
+        def _poisson_pmf(k: int, lam: float) -> float:
+            return math.exp(-lam) * (lam ** k) / math.factorial(k)
+
+        def _compute_live_from_xg(
+            home_xg: float,
+            away_xg: float,
+            current_home: int,
+            current_away: int,
+            minute: Any,
+            red_home: int,
+            red_away: int,
+        ):
+            try:
+                m = int(minute)
+            except Exception:
+                return None
+            if m < 0:
+                m = 0
+            if m > 90:
+                m = 90
+            remaining = max(0, 90 - m)
+            if remaining == 0:
+                if current_home > current_away:
+                    return 100.0, 0.0, 0.0, 0.0, 0.0, f"{current_home}-{current_away}"
+                if current_away > current_home:
+                    return 0.0, 0.0, 100.0, 0.0, 0.0, f"{current_home}-{current_away}"
+                return 0.0, 100.0, 0.0, 0.0, 0.0, f"{current_home}-{current_away}"
+            fraction = remaining / 90.0
+            lambda_home = max(0.05, home_xg * fraction)
+            lambda_away = max(0.05, away_xg * fraction)
+            rh = max(red_home or 0, 0)
+            ra = max(red_away or 0, 0)
+            factor_home = (0.7 ** rh) * (1.15 ** ra)
+            factor_away = (0.7 ** ra) * (1.15 ** rh)
+            lambda_home = max(0.01, lambda_home * factor_home)
+            lambda_away = max(0.01, lambda_away * factor_away)
+            max_goals = 6
+            goals = list(range(max_goals + 1))
+            home_probs = [_poisson_pmf(g, lambda_home) for g in goals]
+            away_probs = [_poisson_pmf(g, lambda_away) for g in goals]
+            matrix = [[home_probs[i] * away_probs[j] for j in range(len(goals))] for i in range(len(goals))]
+            total_mass = sum(sum(row) for row in matrix)
+            if total_mass <= 0:
+                return None
+            home_sum = 0.0
+            draw_sum = 0.0
+            away_sum = 0.0
+            btts_sum = 0.0
+            over25_sum = 0.0
+            best_p = -1.0
+            best_score = f"{current_home}-{current_away}"
+            for i, g_home_extra in enumerate(goals):
+                for j, g_away_extra in enumerate(goals):
+                    p = matrix[i][j]
+                    if p <= 0:
+                        continue
+                    gh = current_home + g_home_extra
+                    ga = current_away + g_away_extra
+                    if gh > ga:
+                        home_sum += p
+                    elif ga > gh:
+                        away_sum += p
+                    else:
+                        draw_sum += p
+                    if gh > 0 and ga > 0:
+                        btts_sum += p
+                    if gh + ga >= 3:
+                        over25_sum += p
+                    if p > best_p:
+                        best_p = p
+                        best_score = f"{gh}-{ga}"
+            if home_sum + draw_sum + away_sum <= 0:
+                return None
+            home_prob = home_sum / (home_sum + draw_sum + away_sum)
+            draw_prob = draw_sum / (home_sum + draw_sum + away_sum)
+            away_prob = away_sum / (home_sum + draw_sum + away_sum)
+            home_pct = round(home_prob * 100.0, 1)
+            draw_pct = round(draw_prob * 100.0, 1)
+            away_pct = round(away_prob * 100.0, 1)
+            btts_pct = round((btts_sum / total_mass) * 100.0, 1)
+            over25_pct = round((over25_sum / total_mass) * 100.0, 1)
+            return home_pct, draw_pct, away_pct, btts_pct, over25_pct, best_score
+
         if goalmodel_url:
             try:
                 payload = {
@@ -759,6 +842,46 @@ class DetailedStatsService:
                 home_prob_pct = round(home_prob, 1)
                 draw_prob_pct = round(draw_prob, 1)
                 away_prob_pct = round(away_prob, 1)
+
+                score_obj_live = getattr(match, "score", None)
+                full_time_live = getattr(score_obj_live, "full_time", None) if score_obj_live is not None else None
+                live_home_goals = None
+                live_away_goals = None
+                if isinstance(full_time_live, dict):
+                    try:
+                        live_home_goals = int(full_time_live.get("home") or 0)
+                        live_away_goals = int(full_time_live.get("away") or 0)
+                    except Exception:
+                        live_home_goals = None
+                        live_away_goals = None
+                minute_live = getattr(match, "minute", None)
+                status_live = getattr(match, "status", None)
+                red_home = 0
+                red_away = 0
+                for ev in getattr(match, "events", []) or []:
+                    if getattr(ev, "type", None) == MatchEventType.RED_CARD:
+                        team_name = getattr(ev, "team", None)
+                        if team_name == getattr(match.home_team, "name", str(match.home_team)):
+                            red_home += 1
+                        elif team_name == getattr(match.away_team, "name", str(match.away_team)):
+                            red_away += 1
+                if (
+                    minute_live is not None
+                    and live_home_goals is not None
+                    and live_away_goals is not None
+                    and status_live in (MatchStatus.LIVE, MatchStatus.IN_PLAY)
+                ):
+                    live_result = _compute_live_from_xg(
+                        home_xg,
+                        away_xg,
+                        live_home_goals,
+                        live_away_goals,
+                        minute_live,
+                        red_home,
+                        red_away,
+                    )
+                    if live_result is not None:
+                        home_prob_pct, draw_prob_pct, away_prob_pct, btts, over25, scoreline = live_result
 
                 def fair_odds(pct: float) -> Optional[float]:
                     if pct <= 0:
@@ -885,6 +1008,46 @@ class DetailedStatsService:
             home_goals_rounded = 1
 
         most_likely_scoreline = f"{home_goals_rounded}-{away_goals_rounded}"
+
+        score_obj_live = getattr(match, "score", None)
+        full_time_live = getattr(score_obj_live, "full_time", None) if score_obj_live is not None else None
+        live_home_goals = None
+        live_away_goals = None
+        if isinstance(full_time_live, dict):
+            try:
+                live_home_goals = int(full_time_live.get("home") or 0)
+                live_away_goals = int(full_time_live.get("away") or 0)
+            except Exception:
+                live_home_goals = None
+                live_away_goals = None
+        minute_live = getattr(match, "minute", None)
+        status_live = getattr(match, "status", None)
+        red_home = 0
+        red_away = 0
+        for ev in getattr(match, "events", []) or []:
+            if getattr(ev, "type", None) == MatchEventType.RED_CARD:
+                team_name = getattr(ev, "team", None)
+                if team_name == getattr(match.home_team, "name", str(match.home_team)):
+                    red_home += 1
+                elif team_name == getattr(match.away_team, "name", str(match.away_team)):
+                    red_away += 1
+        if (
+            minute_live is not None
+            and live_home_goals is not None
+            and live_away_goals is not None
+            and status_live in (MatchStatus.LIVE, MatchStatus.IN_PLAY)
+        ):
+            live_result = _compute_live_from_xg(
+                expected_home_goals,
+                expected_away_goals,
+                live_home_goals,
+                live_away_goals,
+                minute_live,
+                red_home,
+                red_away,
+            )
+            if live_result is not None:
+                home_prob, draw_prob, away_prob, both_teams_to_score_prob, over_under_25_prob, most_likely_scoreline = live_result
 
         def fair_odds(pct: float) -> Optional[float]:
             if pct <= 0:

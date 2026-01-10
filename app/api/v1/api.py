@@ -179,7 +179,7 @@ async def evaluate_predictions_seriea(
 async def evaluate_predictions_norway(
     matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
     api_key: str = Depends(verify_api_key),
-):
+    ):
     try:
         monitor_api_call("api", "norway_predictions_evaluate", "request")
         from app.ml.service import prediction_service
@@ -188,6 +188,36 @@ async def evaluate_predictions_norway(
         return result
     except Exception as e:
         monitor_api_call("api", "norway_predictions_evaluate", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/predictions/reliability/seriea")
+async def get_reliability_seriea(
+    last_n_matchdays: int = Query(18, ge=1, le=38, description="Numero di giornate recenti da considerare"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_reliability_seriea", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_recent_matchdays_serie_a(last_n_matchdays)
+        monitor_api_call("api", "predictions_reliability_seriea", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_reliability_seriea", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/norway/predictions/reliability")
+async def get_reliability_norway(
+    last_n_matchdays: int = Query(18, ge=1, le=30, description="Numero di giornate recenti da considerare"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "norway_predictions_reliability", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_recent_matchdays_norway(last_n_matchdays)
+        monitor_api_call("api", "norway_predictions_reliability", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "norway_predictions_reliability", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 async def _check_redis_health() -> str:
