@@ -1,9 +1,10 @@
 from typing import List, Optional
 from datetime import datetime
+import math
 import logging
 
 from app.data.services.unified_data_service import unified_data_service
-from app.data.models.common import Team, Standings, PredictionInput, PredictionOutput
+from app.data.models.common import Team, Standings, PredictionInput, PredictionOutput, MatchStatus
 from app.ml.models import prediction_model
 
 logger = logging.getLogger(__name__)
@@ -135,8 +136,8 @@ class PredictionService:
         home_team_info = self._get_team_info(home_team_name, standings)
         away_team_info = self._get_team_info(away_team_name, standings)
         
-        home_form = self._get_team_form(home_team_name)
-        away_form = self._get_team_form(away_team_name)
+        home_form = home_team_info.get('form') or self._get_team_form(home_team_name)
+        away_form = away_team_info.get('form') or self._get_team_form(away_team_name)
         
         previous_meetings = await self._get_previous_meetings(
             home_team_name, away_team_name
@@ -150,7 +151,13 @@ class PredictionService:
             home_position=home_team_info.get('position', 20),
             away_position=away_team_info.get('position', 20),
             is_home_advantage=True,
-            previous_meetings=previous_meetings
+            previous_meetings=previous_meetings,
+            home_goals_for=home_team_info.get('goals_for'),
+            home_goals_against=home_team_info.get('goals_against'),
+            away_goals_for=away_team_info.get('goals_for'),
+            away_goals_against=away_team_info.get('goals_against'),
+            home_played=home_team_info.get('played'),
+            away_played=away_team_info.get('played'),
         )
     
     def _get_team_info(self, team_name: str, standings: Standings) -> dict:
@@ -158,6 +165,7 @@ class PredictionService:
         for team_standing in standings.standings:
             if team_standing.team.name.lower() == team_name.lower():
                 return {
+                    'played': team_standing.played,
                     'position': team_standing.position,
                     'points': team_standing.points,
                     'form': team_standing.form,
@@ -175,20 +183,12 @@ class PredictionService:
         }
     
     def _get_team_form(self, team_name: str) -> Optional[str]:
-        """Get team's recent form (simplified implementation)"""
-        # In a real implementation, this would come from data providers
-        # For now, return a mock form string
-        return "WWLWD"  # Example form: Win, Win, Loss, Win, Draw
+        """Get team's recent form if available from real data"""
+        return None
     
     async def _get_previous_meetings(self, home_team: str, away_team: str) -> List[dict]:
-        """Get previous meetings between two teams (simplified)"""
-        # In a real implementation, this would query historical data
-        # For now, return mock data
-        return [
-            {"date": "2024-01-15", "home_goals": 2, "away_goals": 1},
-            {"date": "2023-09-10", "home_goals": 1, "away_goals": 1},
-            {"date": "2023-03-05", "home_goals": 3, "away_goals": 0}
-        ]
+        """Get previous meetings between two teams"""
+        return []
     
     async def train_model(self, historical_data: List[dict]) -> float:
         """
@@ -207,6 +207,104 @@ class PredictionService:
         except Exception as e:
             logger.error(f"Error training model: {e}")
             raise
+
+    async def evaluate_predictions_serie_a(self, matchday: Optional[int] = None) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures(matchday)
+            standings = await unified_data_service.get_standings()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_matches = [
+                match for match in fixtures
+                if getattr(match, "status", None) == MatchStatus.FINISHED
+            ]
+
+            return await self._evaluate_matches(finished_matches, standings)
+        except Exception as e:
+            logger.error(f"Error evaluating predictions for Serie A: {e}")
+            raise
+
+    async def evaluate_predictions_norway(self, matchday: Optional[int] = None) -> dict:
+        try:
+            fixtures = await unified_data_service.get_fixtures_norway(matchday)
+            standings = await unified_data_service.get_standings_norway()
+
+            if not fixtures or not standings:
+                return {"matches_evaluated": 0}
+
+            finished_matches = [
+                match for match in fixtures
+                if getattr(match, "status", None) == MatchStatus.FINISHED
+            ]
+
+            return await self._evaluate_matches(finished_matches, standings)
+        except Exception as e:
+            logger.error(f"Error evaluating predictions for Norway: {e}")
+            raise
+
+    async def _evaluate_matches(self, matches: List, standings: Standings) -> dict:
+        if not matches:
+            return {"matches_evaluated": 0}
+
+        brier_scores: List[float] = []
+        log_losses: List[float] = []
+        accuracies: List[float] = []
+
+        for match in matches:
+            prediction_input = await self._prepare_prediction_input(match, standings)
+            prediction = self.model.predict(prediction_input)
+
+            score_obj = getattr(match, "score", None)
+            full_time = getattr(score_obj, "full_time", None) if score_obj is not None else None
+            if not isinstance(full_time, dict):
+                continue
+
+            home_goals = int(full_time.get("home") or 0)
+            away_goals = int(full_time.get("away") or 0)
+
+            if home_goals > away_goals:
+                actual = "H"
+            elif away_goals > home_goals:
+                actual = "A"
+            else:
+                actual = "D"
+
+            probs = {
+                "H": prediction.home_win_prob,
+                "D": prediction.draw_prob,
+                "A": prediction.away_win_prob,
+            }
+
+            y = {"H": 1.0 if actual == "H" else 0.0,
+                 "D": 1.0 if actual == "D" else 0.0,
+                 "A": 1.0 if actual == "A" else 0.0}
+
+            brier = (
+                (probs["H"] - y["H"]) ** 2
+                + (probs["D"] - y["D"]) ** 2
+                + (probs["A"] - y["A"]) ** 2
+            )
+            brier_scores.append(brier)
+
+            p_true = probs[actual]
+            eps = 1e-15
+            log_losses.append(-math.log(max(p_true, eps)))
+
+            predicted_label = max(probs.items(), key=lambda x: x[1])[0]
+            accuracies.append(1.0 if predicted_label == actual else 0.0)
+
+        n = len(brier_scores)
+        if n == 0:
+            return {"matches_evaluated": 0}
+
+        return {
+            "matches_evaluated": n,
+            "brier_score_mean": sum(brier_scores) / n,
+            "log_loss_mean": sum(log_losses) / n,
+            "accuracy": sum(accuracies) / n,
+        }
 
 # Global prediction service instance
 prediction_service = PredictionService()

@@ -109,6 +109,12 @@ class PredictionInput(BaseModel):
     away_position: int
     is_home_advantage: bool
     previous_meetings: List[Dict[str, Any]]
+    home_goals_for: Optional[int] = None
+    home_goals_against: Optional[int] = None
+    away_goals_for: Optional[int] = None
+    away_goals_against: Optional[int] = None
+    home_played: Optional[int] = None
+    away_played: Optional[int] = None
 
 class PredictionOutput(BaseModel):
     model_config = ConfigDict(protected_namespaces=())

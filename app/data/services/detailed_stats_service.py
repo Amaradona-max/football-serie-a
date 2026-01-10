@@ -706,6 +706,22 @@ class DetailedStatsService:
             cards_summary={"yellow": yellow_cards, "red": red_cards}
         )
     
+    async def get_live_match_cards_norway(self) -> List[LiveMatchCard]:
+        """Get live match cards for Norway Eliteserien using the same rich context"""
+        try:
+            matches: List[MatchLive] = await unified_data_service.get_live_matches_norway()
+            if not matches:
+                return []
+
+            match_cards: List[LiveMatchCard] = []
+            for match in matches:
+                match_cards.append(await self._create_match_card(match))
+
+            return match_cards
+        except Exception as e:
+            logger.error(f"Error getting live match cards for Norway: {e}")
+            raise
+    
     async def _generate_prediction(self, match: Any) -> Any:
         from app.data.models.detailed import MatchPredictionDetailed, ExpectedGoals
 
@@ -769,7 +785,12 @@ class DetailedStatsService:
             except Exception as e:
                 logger.error(f"Error calling goalmodel provider: {e}")
 
-        standings = await unified_data_service.get_standings()
+        competition_name = str(getattr(match, "competition", "") or "")
+
+        if "Eliteserien" in competition_name or "Norway" in competition_name:
+            standings = await unified_data_service.get_standings_norway()
+        else:
+            standings = await unified_data_service.get_standings()
 
         home_team_name = getattr(match.home_team, "name", str(match.home_team))
         away_team_name = getattr(match.away_team, "name", str(match.away_team))

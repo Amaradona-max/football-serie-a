@@ -81,6 +81,51 @@ async def get_next_matchday_predictions(
         monitor_api_call("api", "next_matchday_predictions", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/matches/next/predictions/norway")
+async def get_next_matchday_predictions_norway(
+    matchday: Optional[int] = Query(None, description="Giornata per le previsioni Norvegia (default: prossima giornata nota)"),
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        monitor_api_call("api", "next_matchday_predictions_norway", "request")
+        
+        fixtures = await unified_data_service.get_fixtures_norway(matchday)
+        upcoming = [
+            match for match in fixtures
+            if getattr(match, "status", None) in (MatchStatus.SCHEDULED, MatchStatus.LIVE, MatchStatus.IN_PLAY)
+        ]
+        
+        result = []
+        for match in upcoming:
+            context = await detailed_stats_service.get_prediction_context(match)
+            prediction = context["prediction"]
+            bio_rhythm_analysis = context["bio_rhythm_analysis"]
+            expected_lineups = context["expected_lineups"]
+
+            result.append(
+                {
+                    "match_id": match.id,
+                    "home_team": getattr(match.home_team, "name", str(match.home_team)),
+                    "away_team": getattr(match.away_team, "name", str(match.away_team)),
+                    "matchday": getattr(match, "matchday", None),
+                    "kickoff": match.utc_date.isoformat() if getattr(match, "utc_date", None) else None,
+                    "prediction": prediction,
+                    "bio_rhythm_analysis": bio_rhythm_analysis,
+                    "expected_lineups": expected_lineups,
+                }
+            )
+        
+        result = sorted(
+            result,
+            key=lambda m: (m["matchday"] or 0, m["kickoff"] or ""),
+        )
+        
+        monitor_api_call("api", "next_matchday_predictions_norway", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "next_matchday_predictions_norway", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/matches/live/cards", response_model=List[LiveMatchCard])
 async def get_live_match_cards(api_key: str = Depends(verify_api_key)):
     """
@@ -99,6 +144,20 @@ async def get_live_match_cards(api_key: str = Depends(verify_api_key)):
         return match_cards
     except Exception as e:
         monitor_api_call("api", "live_match_cards", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/matches/live/cards/norway", response_model=List[LiveMatchCard])
+async def get_live_match_cards_norway(api_key: str = Depends(verify_api_key)):
+    """
+    Get live match cards for Norway Eliteserien with detailed analysis.
+    """
+    try:
+        monitor_api_call("api", "live_match_cards_norway", "request")
+        match_cards = await detailed_stats_service.get_live_match_cards_norway()
+        monitor_api_call("api", "live_match_cards_norway", "success")
+        return match_cards
+    except Exception as e:
+        monitor_api_call("api", "live_match_cards_norway", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/analysis/daily", response_model=DailyAnalysis)

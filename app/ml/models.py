@@ -4,7 +4,7 @@ from app.data.models.common import PredictionInput, PredictionOutput
 
 class FootballPredictionModel:
     def __init__(self):
-        self.model_version = "v1.0-heuristic"
+        self.model_version = "v2.0-standings-based"
 
     def train(self, training_data: List[Dict[str, Any]]) -> float:
         return 1.0
@@ -17,16 +17,14 @@ class FootballPredictionModel:
         home_position_factor = (max_position - min(input_data.home_position, max_position)) / max_position
         away_position_factor = (max_position - min(input_data.away_position, max_position)) / max_position
 
-        win_rate = self._calculate_win_rate(input_data.previous_meetings)
-
         base = 0.33
         home_advantage_bonus = 0.08 if input_data.is_home_advantage else 0.0
 
         form_diff = home_form_strength - away_form_strength
         position_diff = home_position_factor - away_position_factor
-        history_diff = (win_rate - 0.5) * 0.5
+        goal_strength = self._calculate_goal_strength(input_data)
 
-        score = base + home_advantage_bonus + 0.25 * form_diff + 0.35 * position_diff + history_diff
+        score = base + home_advantage_bonus + 0.25 * form_diff + 0.35 * position_diff + 0.25 * goal_strength
 
         home_win_prob = max(0.05, min(0.85, score))
 
@@ -89,6 +87,33 @@ class FootballPredictionModel:
                 wins += 0.5
 
         return wins / total if total > 0 else 0.5
+
+    def _calculate_goal_strength(self, input_data: PredictionInput) -> float:
+        home_played = input_data.home_played or 0
+        away_played = input_data.away_played or 0
+        home_gf = input_data.home_goals_for or 0
+        home_ga = input_data.home_goals_against or 0
+        away_gf = input_data.away_goals_for or 0
+        away_ga = input_data.away_goals_against or 0
+
+        if home_played <= 0 or away_played <= 0:
+            return 0.0
+
+        home_attack = home_gf / home_played
+        home_defense = home_ga / home_played
+        away_attack = away_gf / away_played
+        away_defense = away_ga / away_played
+
+        home_balance = home_attack - home_defense
+        away_balance = away_attack - away_defense
+
+        diff = home_balance - away_balance
+        if diff > 1.5:
+            diff = 1.5
+        if diff < -1.5:
+            diff = -1.5
+
+        return diff / 3.0
 
     def _predict_score(self, probabilities: Dict[str, float]) -> Dict[str, int]:
         max_outcome = max(probabilities.items(), key=lambda x: x[1])[0]

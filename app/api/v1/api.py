@@ -160,6 +160,36 @@ async def get_next_matchday_predictions_norway(api_key: str = Depends(verify_api
         monitor_api_call("api", "norway_predictions", "error")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/predictions/evaluate/seriea")
+async def evaluate_predictions_seriea(
+    matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "predictions_evaluate_seriea", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_predictions_serie_a(matchday)
+        monitor_api_call("api", "predictions_evaluate_seriea", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "predictions_evaluate_seriea", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/norway/predictions/evaluate")
+async def evaluate_predictions_norway(
+    matchday: Optional[int] = Query(None, description="Giornata specifica da valutare (default: ultima disponibile)"),
+    api_key: str = Depends(verify_api_key),
+):
+    try:
+        monitor_api_call("api", "norway_predictions_evaluate", "request")
+        from app.ml.service import prediction_service
+        result = await prediction_service.evaluate_predictions_norway(matchday)
+        monitor_api_call("api", "norway_predictions_evaluate", "success")
+        return result
+    except Exception as e:
+        monitor_api_call("api", "norway_predictions_evaluate", "error")
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def _check_redis_health() -> str:
     """Check Redis connection health"""
     try:
